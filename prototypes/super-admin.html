@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sembly — Super Admin (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--fr:#1B6B3A;--fr7:#124A29;--gd:#E8A020;--ink:#14201A;--pp:#FAFAF7;--ln:#E7E9E4;--mut:#6b7770;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#EEF0EA;color:var(--ink);min-height:100vh}
+  .disp{font-family:'Playfair Display',Georgia,serif}
+  .app{display:flex;min-height:100vh;max-width:1280px;margin:0 auto;background:var(--pp)}
+  /* sidebar */
+  .side{width:230px;background:var(--fr7);color:#CFE3D7;padding:20px 14px;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 16px}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--gd);color:var(--fr7);display:grid;place-items:center;font-weight:700;font-size:18px}
+  .brand .name{color:#fff;font-size:21px;font-weight:600}
+  .chip{background:rgba(255,255,255,.08);border-radius:10px;padding:9px 11px;margin-bottom:10px}
+  .nav button{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:none;border-radius:9px;font:inherit;font-size:14px;color:#CFE3D7;background:none;cursor:pointer;text-align:left}
+  .nav button:hover{background:#175C32;color:#fff}
+  .nav button.on{background:#EAF3EE;color:#0D381F;font-weight:600}
+  .nav .ic{width:18px;text-align:center}
+  /* main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .top{height:60px;display:flex;align-items:center;gap:14px;padding:0 24px;background:#fff;border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:5}
+  .search{flex:1;max-width:320px;display:flex;align-items:center;gap:8px;background:var(--pp);border:1px solid var(--ln);border-radius:9px;padding:8px 12px;color:var(--mut);font-size:13px}
+  .av{width:34px;height:34px;border-radius:50%;background:#CFE3D7;color:var(--fr7);display:grid;place-items:center;font-size:13px;font-weight:600}
+  .wrap{padding:26px 28px}
+  h1.pt{font-size:28px;font-weight:700}
+  .sub{font-size:14px;color:var(--mut);margin-top:3px}
+  .row-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .btn{border:none;border-radius:10px;padding:11px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn-fr{background:var(--fr);color:#fff}
+  .btn-fr:hover{background:#175C32}
+  .btn-out{background:#fff;border:1px solid var(--ln);color:var(--ink)}
+  .btn-out:hover{background:var(--pp)}
+  .btn-dn{background:#fff;border:1px solid #F09595;color:#791F1F}
+  .grid{display:grid;gap:14px}
+  .k4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .k3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+  .card{background:#fff;border:1px solid var(--ln);border-radius:14px}
+  .kpi{padding:18px 20px}
+  .kpi .lab{font-size:13px;color:var(--mut)}
+  .kpi .val{font-size:28px;margin-top:5px}
+  .kpi .dl{font-size:12px;margin-top:7px}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);text-align:left;padding:13px 16px;font-weight:600}
+  td{padding:14px 16px;font-size:14px;border-top:1px solid var(--ln)}
+  thead{background:var(--pp)}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 11px;border-radius:999px}
+  .t-act{background:#EAF3EE;color:#124A29}.t-tri{background:#FDF6E9;color:#7A500D}.t-pd{background:#FCEBEB;color:#791F1F}
+  .clk{cursor:pointer}.clk:hover{background:var(--pp)}
+  .fld{font:inherit;font-size:14px;width:100%;padding:10px 12px;border:1px solid var(--ln);border-radius:9px;background:#fff}
+  .fld:focus{outline:none;border-color:#6FAA88;box-shadow:0 0 0 3px rgba(27,107,58,.12)}
+  .lbl{font-size:13px;font-weight:600;color:#3a463f;display:block;margin-bottom:6px}
+  .view{display:none}.view.on{display:block;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .muted-box{padding:54px 20px;text-align:center;color:var(--mut);font-size:14px}
+  @media(max-width:760px){.side{display:none}.wrap{padding:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo disp">S</span><span class="name disp">Sembly</span></div>
+    <div class="chip"><div style="font-size:12px;color:#9FC4AC">Platform console</div><div style="font-size:13px;color:#fff;font-weight:500">Super Admin</div></div>
+    <nav class="nav" id="nav">
+      <button data-v="overview" class="on"><span class="ic">◧</span>Overview</button>
+      <button data-v="schools"><span class="ic">▦</span>Schools</button>
+      <button data-v="onboarding"><span class="ic">＋</span>Onboarding</button>
+      <button data-v="subs"><span class="ic">▤</span>Subscriptions</button>
+      <button data-v="revenue"><span class="ic">◈</span>Revenue</button>
+      <button data-v="settings"><span class="ic">⚙</span>Settings</button>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div class="search">⌕&nbsp; Search schools…</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px"><span style="color:var(--mut)">⌾</span><span class="av">TB</span></div>
+    </div>
+    <div class="wrap">
+
+      <!-- OVERVIEW -->
+      <section class="view on" data-view="overview">
+        <div class="row-head">
+          <div><h1 class="pt disp">Platform overview</h1><div class="sub">All schools on Sembly, at a glance</div></div>
+          <button class="btn btn-fr" id="cta-onboard">＋ Onboard school</button>
+        </div>
+        <div class="grid k4" style="margin-bottom:22px">
+          <div class="card kpi"><div class="lab">Total schools</div><div class="val disp">42</div><div class="dl" style="color:var(--fr)">+3 this month</div></div>
+          <div class="card kpi"><div class="lab">Active subscriptions</div><div class="val disp">38</div><div class="dl" style="color:var(--mut)">3 trials · 1 past due</div></div>
+          <div class="card kpi"><div class="lab">Platform MRR</div><div class="val disp" style="color:#175C32">₦3,840,000</div><div class="dl" style="color:var(--fr)">+₦240k vs last month</div></div>
+          <div class="card kpi"><div class="lab">Students platform-wide</div><div class="val disp">11,240</div><div class="dl" style="color:var(--mut)">across 42 schools</div></div>
+        </div>
+        <div class="grid k3">
+          <div class="card kpi" style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-weight:600">Starter</div><div style="font-size:12px;color:var(--mut)">₦35k / mo</div></div><div class="disp" style="font-size:24px">11</div></div>
+          <div class="card kpi" style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-weight:600">School Suite</div><div style="font-size:12px;color:var(--mut)">₦90k / mo</div></div><div class="disp" style="font-size:24px">19</div></div>
+          <div class="card kpi" style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-weight:600">Full School</div><div style="font-size:12px;color:var(--mut)">₦150k / mo</div></div><div class="disp" style="font-size:24px">8</div></div>
+        </div>
+      </section>
+
+      <!-- SCHOOLS -->
+      <section class="view" data-view="schools">
+        <div class="row-head"><div><h1 class="pt disp">Schools</h1><div class="sub">Click any school to open its profile</div></div><button class="btn btn-fr" data-go="onboarding">＋ Onboard school</button></div>
+        <input id="school-search" class="fld" placeholder="Filter by name…" style="max-width:300px;margin-bottom:16px">
+        <div class="card" style="overflow:hidden">
+          <table style="table-layout:fixed">
+            <thead><tr><th style="width:34%">School</th><th>Plan</th><th style="text-align:right">Students</th><th style="text-align:right">MRR</th><th>Status</th></tr></thead>
+            <tbody id="school-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SCHOOL DETAIL -->
+      <section class="view" data-view="detail">
+        <button class="btn btn-out" data-go="schools" style="margin-bottom:16px">← Back to schools</button>
+        <div class="card" style="padding:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap">
+            <div><h1 class="pt disp" id="d-name">—</h1><div class="sub" id="d-sub">—</div></div>
+            <span id="d-status" class="pill">—</span>
+          </div>
+          <div class="grid k3" style="margin-bottom:20px">
+            <div class="card kpi"><div class="lab">Plan</div><div id="d-plan" style="font-size:17px;font-weight:600;margin-top:4px">—</div></div>
+            <div class="card kpi"><div class="lab">Students</div><div id="d-students" class="val disp" style="font-size:24px">—</div></div>
+            <div class="card kpi"><div class="lab">Monthly fee</div><div id="d-mrr" class="val disp" style="font-size:24px;color:#175C32">—</div></div>
+          </div>
+          <div style="border-top:1px solid var(--ln);padding-top:16px;font-size:14px">
+            <div style="display:flex;justify-content:space-between;padding:7px 0"><span style="color:var(--mut)">Owner</span><span id="d-owner">—</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0"><span style="color:var(--mut)">Joined</span><span id="d-joined">—</span></div>
+          </div>
+          <div style="display:flex;gap:9px;margin-top:20px;flex-wrap:wrap">
+            <button class="btn btn-fr" style="padding:9px 14px;font-size:13px">Impersonate</button>
+            <button class="btn btn-out" style="padding:9px 14px;font-size:13px">Change plan</button>
+            <button class="btn btn-dn" style="padding:9px 14px;font-size:13px">Suspend</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ONBOARDING -->
+      <section class="view" data-view="onboarding">
+        <h1 class="pt disp">Onboard a school</h1><div class="sub" style="margin-bottom:20px">Creates the tenant and the owner's first login</div>
+        <div id="ob-form" class="card" style="padding:24px;max-width:520px">
+          <div style="margin-bottom:16px"><label class="lbl">School name</label><input id="ob-name" class="fld" placeholder="e.g. Sunrise International"></div>
+          <div style="margin-bottom:16px"><label class="lbl">Subdomain</label><div style="display:flex;align-items:center;gap:8px"><input id="ob-sub" class="fld" placeholder="sunrise" style="max-width:200px"><span style="font-size:13px;color:var(--mut)">.sembly.com</span></div></div>
+          <div style="margin-bottom:16px"><label class="lbl">Plan</label><select id="ob-plan" class="fld"><option>Starter — ₦35,000/mo</option><option selected>School Suite — ₦90,000/mo</option><option>Full School — ₦150,000/mo</option></select></div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px"><div><label class="lbl">Owner name</label><input id="ob-owner" class="fld" placeholder="Full name"></div><div><label class="lbl">Owner email</label><input class="fld" placeholder="owner@school.edu.ng"></div></div>
+          <button id="ob-submit" class="btn btn-fr" style="margin-top:4px">Create school</button>
+        </div>
+        <div id="ob-done" class="card" style="display:none;padding:30px;max-width:520px;text-align:center;border-color:#9FE1CB">
+          <div style="font-size:42px;color:#0F6E56">✓</div>
+          <div class="disp" id="ob-msg" style="font-size:22px;margin-top:8px">School created</div>
+          <div class="sub" style="margin-top:6px">An invite has been sent to the owner to set their password.</div>
+          <button class="btn btn-out" id="ob-back" style="margin-top:18px">Done</button>
+        </div>
+      </section>
+
+      <!-- SUBSCRIPTIONS -->
+      <section class="view" data-view="subs">
+        <h1 class="pt disp">Subscriptions</h1><div class="sub" style="margin-bottom:18px">Renewals, trials and past-due accounts</div>
+        <div class="card" style="overflow:hidden">
+          <table style="table-layout:fixed"><thead><tr><th style="width:38%">School</th><th>Plan</th><th>Renews</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Greenfield Academy</td><td>School Suite</td><td>12 Jun 2026</td><td><span class="pill t-act">Active</span></td></tr>
+            <tr><td>Brightstars College</td><td>Full School</td><td>1 Jul 2026</td><td><span class="pill t-act">Active</span></td></tr>
+            <tr><td>Hilltop Academy</td><td>School Suite</td><td>Trial ends 9 Jun</td><td><span class="pill t-tri">Trial</span></td></tr>
+            <tr><td>Crown Heights School</td><td>Full School</td><td>Overdue 4 days</td><td><span class="pill t-pd">Past due</span></td></tr>
+          </tbody></table>
+        </div>
+      </section>
+
+      <section class="view" data-view="revenue"><h1 class="pt disp">Revenue</h1><div class="sub" style="margin-bottom:18px">Detailed MRR, churn and growth charts.</div><div class="card muted-box">◈<div style="margin-top:8px">Revenue charts — to be designed</div></div></section>
+      <section class="view" data-view="settings"><h1 class="pt disp">Platform settings</h1><div class="sub" style="margin-bottom:18px">Plans &amp; pricing, billing config, platform announcements.</div><div class="card muted-box">⚙<div style="margin-top:8px">Settings — to be designed</div></div></section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  var schools=[
+    {name:"Greenfield Academy",sub:"greenfield.sembly.com",plan:"School Suite",students:480,mrr:"₦90,000",status:"Active",cls:"t-act",owner:"Adunola Bakare",joined:"Sep 2024"},
+    {name:"Brightstars College",sub:"brightstars.sembly.com",plan:"Full School",students:612,mrr:"₦150,000",status:"Active",cls:"t-act",owner:"Chinedu Okafor",joined:"Aug 2024"},
+    {name:"Little Saints School",sub:"littlesaints.sembly.com",plan:"Starter",students:210,mrr:"₦35,000",status:"Active",cls:"t-act",owner:"Funmi Adebayo",joined:"Jan 2025"},
+    {name:"Hilltop Academy",sub:"hilltop.sembly.com",plan:"School Suite",students:388,mrr:"₦90,000",status:"Trial",cls:"t-tri",owner:"Musa Ibrahim",joined:"May 2026"},
+    {name:"Crown Heights School",sub:"crownheights.sembly.com",plan:"Full School",students:540,mrr:"₦150,000",status:"Past due",cls:"t-pd",owner:"Grace Eze",joined:"Oct 2024"}
+  ];
+  function show(v){
+    document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.dataset.view===v);});
+    document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v);});
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){show(b.dataset.v);};});
+  document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){show(b.dataset.go);};});
+  document.getElementById('cta-onboard').onclick=function(){show('onboarding');};
+  function rows(f){
+    var tb=document.getElementById('school-rows');tb.innerHTML='';
+    schools.forEach(function(s,i){
+      if(f && s.name.toLowerCase().indexOf(f.toLowerCase())<0)return;
+      var tr=document.createElement('tr');tr.className='clk';
+      tr.innerHTML='<td><div style="font-weight:600">'+s.name+'</div><div style="font-size:12px;color:#6b7770">'+s.sub+'</div></td><td>'+s.plan+'</td><td style="text-align:right">'+s.students+'</td><td style="text-align:right">'+s.mrr+'</td><td><span class="pill '+s.cls+'">'+s.status+'</span></td>';
+      tr.onclick=function(){detail(i);};tb.appendChild(tr);
+    });
+  }
+  function detail(i){var s=schools[i];
+    document.getElementById('d-name').textContent=s.name;document.getElementById('d-sub').textContent=s.sub;
+    document.getElementById('d-plan').textContent=s.plan;document.getElementById('d-students').textContent=s.students;
+    document.getElementById('d-mrr').textContent=s.mrr;document.getElementById('d-owner').textContent=s.owner;document.getElementById('d-joined').textContent=s.joined;
+    var st=document.getElementById('d-status');st.textContent=s.status;st.className='pill '+s.cls;show('detail');
+  }
+  document.getElementById('school-search').oninput=function(e){rows(e.target.value);};
+  var nm=document.getElementById('ob-name'),su=document.getElementById('ob-sub');
+  nm.oninput=function(){if(!su.dataset.t)su.value=nm.value.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,16);};
+  su.oninput=function(){su.dataset.t=1;};
+  document.getElementById('ob-submit').onclick=function(){document.getElementById('ob-msg').textContent=(nm.value.trim()||'New school')+' created';document.getElementById('ob-form').style.display='none';document.getElementById('ob-done').style.display='block';};
+  document.getElementById('ob-back').onclick=function(){document.getElementById('ob-form').style.display='block';document.getElementById('ob-done').style.display='none';show('schools');};
+  rows('');
+</script>
+</body>
+</html>

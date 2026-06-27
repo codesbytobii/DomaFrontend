@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sembly — School Owner (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--fr:#1B6B3A;--fr7:#124A29;--gd:#E8A020;--ink:#14201A;--pp:#FAFAF7;--ln:#E7E9E4;--mut:#6b7770;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#EEF0EA;color:var(--ink);min-height:100vh}
+  .disp{font-family:'Playfair Display',Georgia,serif}
+  .app{display:flex;min-height:100vh;max-width:1280px;margin:0 auto;background:var(--pp)}
+  .side{width:232px;background:var(--fr7);color:#CFE3D7;padding:20px 14px;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 14px}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--gd);color:var(--fr7);display:grid;place-items:center;font-weight:700;font-size:18px}
+  .brand .name{color:#fff;font-size:21px;font-weight:600}
+  .chip{background:rgba(255,255,255,.08);border-radius:10px;padding:9px 11px;margin-bottom:10px}
+  .nav button{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:none;border-radius:9px;font:inherit;font-size:14px;color:#CFE3D7;background:none;cursor:pointer;text-align:left}
+  .nav button:hover{background:#175C32;color:#fff}
+  .nav button.on{background:#EAF3EE;color:#0D381F;font-weight:600}
+  .nav .ic{width:18px;text-align:center}
+  .nav .lock{margin-left:auto;font-size:10px;background:rgba(232,160,32,.2);color:#F3D08A;padding:1px 6px;border-radius:5px}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .top{height:60px;display:flex;align-items:center;gap:14px;padding:0 24px;background:#fff;border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:5}
+  .search{flex:1;max-width:320px;display:flex;align-items:center;gap:8px;background:var(--pp);border:1px solid var(--ln);border-radius:9px;padding:8px 12px;color:var(--mut);font-size:13px}
+  .term{font-size:12px;color:var(--mut);background:var(--pp);border:1px solid var(--ln);border-radius:8px;padding:6px 11px}
+  .av{width:34px;height:34px;border-radius:50%;background:#CFE3D7;color:var(--fr7);display:grid;place-items:center;font-size:13px;font-weight:600}
+  .wrap{padding:26px 28px}
+  h1.pt{font-size:28px;font-weight:700}
+  .sub{font-size:14px;color:var(--mut);margin-top:3px}
+  .row-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .btn{border:none;border-radius:10px;padding:11px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn-fr{background:var(--fr);color:#fff}.btn-fr:hover{background:#175C32}
+  .btn-out{background:#fff;border:1px solid var(--ln);color:var(--ink)}.btn-out:hover{background:var(--pp)}
+  .btn-sm{padding:7px 12px;font-size:13px}
+  .grid{display:grid;gap:14px}
+  .card{background:#fff;border:1px solid var(--ln);border-radius:14px}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);text-align:left;padding:13px 16px;font-weight:600}
+  td{padding:13px 16px;font-size:14px;border-top:1px solid var(--ln)}
+  thead{background:var(--pp)}
+  .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:6px;background:#EAF3EE;color:#124A29}
+  .tag-s{background:#FDF6E9;color:#7A500D}
+  .fld{font:inherit;font-size:14px;width:100%;padding:10px 12px;border:1px solid var(--ln);border-radius:9px;background:#fff}
+  .fld:focus{outline:none;border-color:#6FAA88;box-shadow:0 0 0 3px rgba(27,107,58,.12)}
+  .lbl{font-size:13px;font-weight:600;color:#3a463f;display:block;margin-bottom:6px}
+  .view{display:none}.view.on{display:block;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .muted-box{padding:54px 20px;text-align:center;color:var(--mut);font-size:14px}
+  .seg{display:inline-flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden}
+  .seg button{border:none;background:#fff;font:inherit;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;color:var(--mut)}
+  .seg button.p{background:var(--fr);color:#fff}
+  .seg button.r{background:#FCEBEB;color:#791F1F}
+  .seg button.g{background:var(--gd);color:#3a2c05}
+  .mini{background:var(--pp);border-radius:10px;padding:12px 14px;font-size:13px}
+  @media(max-width:760px){.side{display:none}.wrap{padding:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo disp">S</span><span class="name disp">Sembly</span></div>
+    <div class="chip"><div style="font-size:12px;color:#9FC4AC">Greenfield Academy</div><div style="font-size:13px;color:#fff;font-weight:500">School Owner</div></div>
+    <nav class="nav" id="nav">
+      <button data-v="dash"><span class="ic">◧</span>Dashboard</button>
+      <button data-v="students"><span class="ic">◍</span>Students</button>
+      <button data-v="classes" class="on"><span class="ic">▦</span>Classes &amp; arms</button>
+      <button data-v="promote"><span class="ic">↗</span>Promotions</button>
+      <button data-v="results"><span class="ic">▤</span>Results</button>
+      <button data-v="fees"><span class="ic">₦</span>Fees</button>
+      <button data-v="staff"><span class="ic">◎</span>Staff</button>
+      <button data-v="settings"><span class="ic">⚙</span>Settings</button>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div class="search">⌕&nbsp; Search…</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px"><span class="term">2nd Term · 2024/2025</span><span class="av">AB</span></div>
+    </div>
+    <div class="wrap">
+
+      <!-- CLASSES -->
+      <section class="view on" data-view="classes">
+        <div class="row-head">
+          <div><h1 class="pt disp">Classes &amp; arms</h1><div class="sub">Set up classes, assign form teachers, edit details</div></div>
+          <button class="btn btn-fr" id="add-class">＋ Add class</button>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <table style="table-layout:fixed">
+            <thead><tr><th style="width:20%">Class</th><th>Level</th><th>Form teacher</th><th style="text-align:right">Students</th><th style="text-align:right">Capacity</th><th style="text-align:right">Action</th></tr></thead>
+            <tbody id="class-rows"></tbody>
+          </table>
+        </div>
+        <div class="sub" style="margin-top:12px">Promotions at session end are handled under the Promotions tab.</div>
+      </section>
+
+      <!-- CLASS FORM -->
+      <section class="view" data-view="classform">
+        <button class="btn btn-out btn-sm" data-go="classes" style="margin-bottom:16px">← Back to classes</button>
+        <h1 class="pt disp" id="cf-title">Add class</h1>
+        <div class="sub" style="margin-bottom:20px">Define the class, its level and form teacher</div>
+        <div class="card" style="padding:24px;max-width:560px">
+          <div class="grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+            <div><label class="lbl">Class name</label><select id="cf-name" class="fld"><option>JSS1</option><option>JSS2</option><option>JSS3</option><option>SS1</option><option>SS2</option><option>SS3</option></select></div>
+            <div><label class="lbl">Arm</label><select id="cf-arm" class="fld"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+          </div>
+          <div style="margin-bottom:16px"><label class="lbl">Level</label><select id="cf-level" class="fld"><option>Junior</option><option>Senior</option></select></div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+            <div><label class="lbl">Form teacher</label><select id="cf-teacher" class="fld"><option>Mrs. Grace Eze</option><option>Mr. Bayo Ojo</option><option>Mr. Sola Adeniyi</option><option>Mrs. Ngozi Udeh</option><option>Mr. Tunde Bello</option><option>Unassigned</option></select></div>
+            <div><label class="lbl">Capacity</label><input id="cf-cap" class="fld" type="number" value="35"></div>
+          </div>
+          <button class="btn btn-fr" id="cf-save" style="margin-top:4px">Save class</button>
+        </div>
+      </section>
+
+      <!-- PROMOTIONS -->
+      <section class="view" data-view="promote">
+        <div class="row-head">
+          <div><h1 class="pt disp">Promote students</h1><div class="sub">End of 2024/2025 session — move each class up to the next</div></div>
+        </div>
+        <div class="grid" style="grid-template-columns:240px 1fr;align-items:start">
+          <div class="card" style="padding:8px">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:8px 10px 4px;font-weight:600">Select a class</div>
+            <div id="promote-list"></div>
+          </div>
+          <div>
+            <div class="card" style="padding:16px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <div style="font-size:15px"><b id="pr-from">JSS1A</b> <span style="color:var(--mut)">moves to</span> <b id="pr-to">JSS2A</b></div>
+              <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+                <span class="mini"><b id="pr-promo">0</b> promoting</span>
+                <span class="mini" style="background:#FCEBEB;color:#791F1F"><b id="pr-rep">0</b> repeating</span>
+                <span class="mini" id="pr-grad-box" style="display:none;background:#FDF6E9;color:#7A500D"><b id="pr-grad">0</b> graduating</span>
+              </div>
+            </div>
+            <div class="card" style="overflow:hidden">
+              <table><thead><tr><th style="width:46%">Student</th><th>Reg number</th><th style="text-align:right">Decision</th></tr></thead><tbody id="promote-rows"></tbody></table>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-fr" id="run-promote">Run promotion for <span id="run-label">JSS1A</span></button></div>
+          </div>
+        </div>
+        <div id="promote-done" class="card" style="display:none;padding:24px;text-align:center;border-color:#9FE1CB;margin-top:16px">
+          <div style="font-size:38px;color:#0F6E56">✓</div>
+          <div class="disp" id="pd-msg" style="font-size:20px;margin-top:6px">Promotion complete</div>
+          <div class="sub" style="margin-top:5px">Students have been moved and new class rosters updated for 2025/2026.</div>
+        </div>
+      </section>
+
+      <section class="view" data-view="dash"><h1 class="pt disp">Dashboard</h1><div class="sub" style="margin-bottom:18px">School-wide overview — the version we built earlier.</div><div class="card muted-box">◧<div style="margin-top:8px">Existing dashboard (KPIs, charts, activity)</div></div></section>
+      <section class="view" data-view="students"><h1 class="pt disp">Students</h1><div class="sub" style="margin-bottom:18px">The searchable, filterable roster — with full add/edit.</div><div class="card muted-box">◍<div style="margin-top:8px">Existing students list + add/edit student</div></div></section>
+      <section class="view" data-view="results"><h1 class="pt disp">Results</h1><div class="sub" style="margin-bottom:18px">Score entry with live grades, totals and positions.</div><div class="card muted-box">▤<div style="margin-top:8px">Existing results sheet</div></div></section>
+      <section class="view" data-view="fees"><h1 class="pt disp">Fees</h1><div class="sub" style="margin-bottom:18px">Collection summary, invoices and payments.</div><div class="card muted-box">₦<div style="margin-top:8px">Existing fees module</div></div></section>
+      <section class="view" data-view="staff"><h1 class="pt disp">Staff</h1><div class="sub" style="margin-bottom:18px">Teachers and admins — roles, subjects and class assignments.</div><div class="card muted-box">◎<div style="margin-top:8px">Staff management — to be designed</div></div></section>
+      <section class="view" data-view="settings"><h1 class="pt disp">Settings</h1><div class="sub" style="margin-bottom:18px">School profile, grading scale, sessions &amp; terms.</div><div class="card muted-box">⚙<div style="margin-top:8px">Existing settings</div></div></section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  var classes=[
+    {name:"JSS1A",level:"Junior",teacher:"Mrs. Grace Eze",count:32,cap:35,next:"JSS2A"},
+    {name:"JSS1B",level:"Junior",teacher:"Mr. Bayo Ojo",count:30,cap:35,next:"JSS2B"},
+    {name:"JSS2A",level:"Junior",teacher:"Mr. Sola Adeniyi",count:28,cap:35,next:"JSS3A"},
+    {name:"JSS3A",level:"Junior",teacher:"Mrs. Ngozi Udeh",count:31,cap:35,next:"SS1A"},
+    {name:"SS1A",level:"Senior",teacher:"Mr. Tunde Bello",count:27,cap:30,next:"SS2A"},
+    {name:"SS2A",level:"Senior",teacher:"Mrs. Aisha Yusuf",count:25,cap:30,next:"SS3A"},
+    {name:"SS3A",level:"Senior",teacher:"Mr. Emeka Obi",count:24,cap:30,next:"Graduated"}
+  ];
+  var fn=["Chidinma","Emeka","Aisha","Tunde","Ngozi","Bola","Ifeoma","Yusuf","Funke","Obinna"];
+  var ln=["Okafor","Bello","Adeyemi","Eze","Mohammed","Olawale","Nwankwo","Ibrahim"];
+  function roster(cls,n){var a=[];for(var i=0;i<n;i++){a.push({id:cls+i,name:fn[i%fn.length]+" "+ln[(i*3)%ln.length],reg:"GFA/25/"+(1000+i)});}return a;}
+
+  function show(v){
+    document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.dataset.view===v);});
+    document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v);});
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){show(b.dataset.v);};});
+  document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){show(b.dataset.go);};});
+
+  /* classes table */
+  function classRows(){
+    var tb=document.getElementById('class-rows');tb.innerHTML='';
+    classes.forEach(function(c,i){
+      var tr=document.createElement('tr');
+      var lv=c.level==="Junior"?'tag':'tag tag-s';
+      tr.innerHTML='<td style="font-weight:600">'+c.name+'</td><td><span class="'+lv+'">'+c.level+'</span></td><td>'+c.teacher+'</td><td style="text-align:right">'+c.count+'</td><td style="text-align:right">'+c.cap+'</td><td style="text-align:right"></td>';
+      var btn=document.createElement('button');btn.className='btn btn-out btn-sm';btn.textContent='Edit';btn.onclick=function(){openForm(i);};
+      tr.lastChild.appendChild(btn);tb.appendChild(tr);
+    });
+  }
+  var editing=null;
+  function openForm(i){
+    editing=i;
+    document.getElementById('cf-title').textContent=i===null?'Add class':'Edit class';
+    if(i!==null){var c=classes[i];var base=c.name.replace(/[A-D]$/,'');var arm=c.name.slice(-1);
+      document.getElementById('cf-name').value=base;document.getElementById('cf-arm').value=arm;
+      document.getElementById('cf-level').value=c.level;document.getElementById('cf-teacher').value=c.teacher;document.getElementById('cf-cap').value=c.cap;}
+    show('classform');
+  }
+  document.getElementById('add-class').onclick=function(){openForm(null);};
+  document.getElementById('cf-save').onclick=function(){
+    var nm=document.getElementById('cf-name').value+document.getElementById('cf-arm').value;
+    var obj={name:nm,level:document.getElementById('cf-level').value,teacher:document.getElementById('cf-teacher').value,count:editing!==null?classes[editing].count:0,cap:parseInt(document.getElementById('cf-cap').value)||35,next:"—"};
+    if(editing!==null)classes[editing]=obj;else classes.push(obj);
+    classRows();show('classes');
+  };
+
+  /* promotions */
+  var curClass=0,decisions={};
+  function promoteList(){
+    var box=document.getElementById('promote-list');box.innerHTML='';
+    classes.forEach(function(c,i){
+      var b=document.createElement('button');
+      b.style.cssText='width:100%;text-align:left;border:none;background:'+(i===curClass?'#EAF3EE':'transparent')+';color:'+(i===curClass?'#0D381F':'var(--ink)')+';font:inherit;font-size:13px;font-weight:'+(i===curClass?'600':'400')+';padding:9px 11px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between';
+      b.innerHTML='<span>'+c.name+'</span><span style="color:var(--mut);font-size:12px">'+c.count+'</span>';
+      b.onclick=function(){curClass=i;loadRoster();};box.appendChild(b);
+    });
+  }
+  function loadRoster(){
+    var c=classes[curClass];var exit=c.next==="Graduated";
+    document.getElementById('pr-from').textContent=c.name;
+    document.getElementById('pr-to').textContent=exit?"Graduated":c.next;
+    document.getElementById('run-label').textContent=c.name;
+    document.getElementById('pr-grad-box').style.display=exit?'inline-block':'none';
+    var list=roster(c.name,c.count);decisions={};
+    var tb=document.getElementById('promote-rows');tb.innerHTML='';
+    list.forEach(function(s){
+      decisions[s.id]=exit?'grad':'promo';
+      var tr=document.createElement('tr');
+      var seg=exit
+        ? '<div class="seg"><button data-s="'+s.id+'" data-d="grad" class="g">Graduate</button><button data-s="'+s.id+'" data-d="rep">Repeat</button></div>'
+        : '<div class="seg"><button data-s="'+s.id+'" data-d="promo" class="p">Promote</button><button data-s="'+s.id+'" data-d="rep">Repeat</button></div>';
+      tr.innerHTML='<td style="font-weight:600">'+s.name+'</td><td style="color:var(--mut);font-size:13px">'+s.reg+'</td><td style="text-align:right">'+seg+'</td>';
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('.seg button').forEach(function(b){b.onclick=function(){
+      var id=b.dataset.s;decisions[id]=b.dataset.d;
+      var sibs=b.parentNode.querySelectorAll('button');
+      sibs.forEach(function(x){x.className='';});
+      b.className=b.dataset.d==='rep'?'r':(b.dataset.d==='grad'?'g':'p');
+      tally(exit);
+    };});
+    tally(exit);
+    promoteList();
+    document.getElementById('promote-done').style.display='none';
+  }
+  function tally(exit){
+    var p=0,r=0,g=0;for(var k in decisions){if(decisions[k]==='promo')p++;else if(decisions[k]==='rep')r++;else if(decisions[k]==='grad')g++;}
+    document.getElementById('pr-promo').textContent=p;document.getElementById('pr-rep').textContent=r;document.getElementById('pr-grad').textContent=g;
+  }
+  document.getElementById('run-promote').onclick=function(){
+    var c=classes[curClass];var p=0,g=0;for(var k in decisions){if(decisions[k]==='promo')p++;if(decisions[k]==='grad')g++;}
+    var msg=c.next==="Graduated"?(g+" students graduated from "+c.name):(p+" students promoted "+c.name+" → "+c.next);
+    document.getElementById('pd-msg').textContent=msg;document.getElementById('promote-done').style.display='block';
+    document.getElementById('promote-done').scrollIntoView({behavior:'smooth'});
+  };
+
+  classRows();promoteList();loadRoster();
+</script>
+</body>
+</html>

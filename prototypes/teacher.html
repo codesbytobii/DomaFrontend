@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sembly — Teacher (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--fr:#1B6B3A;--fr7:#124A29;--gd:#E8A020;--ink:#14201A;--pp:#FAFAF7;--ln:#E7E9E4;--mut:#6b7770;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#EEF0EA;color:var(--ink);min-height:100vh}
+  .disp{font-family:'Playfair Display',Georgia,serif}
+  .app{display:flex;min-height:100vh;max-width:1280px;margin:0 auto;background:var(--pp)}
+  .side{width:230px;background:var(--fr7);color:#CFE3D7;padding:20px 14px;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 14px}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--gd);color:var(--fr7);display:grid;place-items:center;font-weight:700;font-size:18px}
+  .brand .name{color:#fff;font-size:21px;font-weight:600}
+  .chip{background:rgba(255,255,255,.08);border-radius:10px;padding:9px 11px;margin-bottom:10px}
+  .nav button{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:none;border-radius:9px;font:inherit;font-size:14px;color:#CFE3D7;background:none;cursor:pointer;text-align:left}
+  .nav button:hover{background:#175C32;color:#fff}
+  .nav button.on{background:#EAF3EE;color:#0D381F;font-weight:600}
+  .nav .ic{width:18px;text-align:center}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .top{height:60px;display:flex;align-items:center;gap:14px;padding:0 24px;background:#fff;border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:5}
+  .search{flex:1;max-width:300px;display:flex;align-items:center;gap:8px;background:var(--pp);border:1px solid var(--ln);border-radius:9px;padding:8px 12px;color:var(--mut);font-size:13px}
+  .term{font-size:12px;color:var(--mut);background:var(--pp);border:1px solid var(--ln);border-radius:8px;padding:6px 11px}
+  .av{width:34px;height:34px;border-radius:50%;background:#CFE3D7;color:var(--fr7);display:grid;place-items:center;font-size:13px;font-weight:600}
+  .wrap{padding:26px 28px}
+  h1.pt{font-size:28px;font-weight:700}
+  .sub{font-size:14px;color:var(--mut);margin-top:3px}
+  .row-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .btn{border:none;border-radius:10px;padding:11px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn-fr{background:var(--fr);color:#fff}.btn-fr:hover{background:#175C32}
+  .btn-out{background:#fff;border:1px solid var(--ln);color:var(--ink)}.btn-out:hover{background:var(--pp)}
+  .btn-sm{padding:7px 12px;font-size:13px}
+  .grid{display:grid;gap:14px}
+  .card{background:#fff;border:1px solid var(--ln);border-radius:14px}
+  .kpi{padding:18px 20px}.kpi .lab{font-size:13px;color:var(--mut)}.kpi .val{font-size:28px;margin-top:5px}.kpi .dl{font-size:12px;margin-top:7px}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);text-align:left;padding:12px 14px;font-weight:600}
+  td{padding:11px 14px;font-size:14px;border-top:1px solid var(--ln)}
+  thead{background:var(--pp)}
+  .fld{font:inherit;font-size:14px;width:100%;padding:10px 12px;border:1px solid var(--ln);border-radius:9px;background:#fff}
+  .fld:focus{outline:none;border-color:#6FAA88;box-shadow:0 0 0 3px rgba(27,107,58,.12)}
+  .lbl{font-size:13px;font-weight:600;color:#3a463f;display:block;margin-bottom:6px}
+  .view{display:none}.view.on{display:block;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:6px;background:#EAF3EE;color:#124A29}
+  .tag-g{background:#FDF6E9;color:#7A500D}
+  .att{display:inline-flex;gap:6px}
+  .att button{border:1px solid var(--ln);background:#fff;font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;color:var(--mut);display:inline-flex;align-items:center;gap:5px}
+  .att button.p{background:var(--fr);color:#fff;border-color:var(--fr)}
+  .att button.l{background:var(--gd);color:#3a2c05;border-color:var(--gd)}
+  .att button.a{background:#D64545;color:#fff;border-color:#D64545}
+  .score{width:62px;text-align:center;font:inherit;font-size:14px;padding:7px 4px;border:1px solid var(--ln);border-radius:8px}
+  .score:focus{outline:none;border-color:#6FAA88;box-shadow:0 0 0 3px rgba(27,107,58,.12)}
+  .gp{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:6px}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:#FDF6E9;color:#7A500D}
+  .tt{width:100%;border-collapse:collapse;table-layout:fixed}
+  .tt td,.tt th{border:1px solid var(--ln);padding:7px;font-size:12px;text-align:center}
+  .tt .cell{background:#EAF3EE;border-radius:6px;padding:6px}
+  .tt .free{color:var(--mut)}
+  @media(max-width:760px){.side{display:none}.wrap{padding:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo disp">S</span><span class="name disp">Sembly</span></div>
+    <div class="chip"><div style="font-size:12px;color:#9FC4AC">Greenfield Academy</div><div style="font-size:13px;color:#fff;font-weight:500">Mr. Bayo Ojo · Teacher</div></div>
+    <nav class="nav" id="nav">
+      <button data-v="dash" class="on"><span class="ic">◧</span>Dashboard</button>
+      <button data-v="classes"><span class="ic">▦</span>My classes</button>
+      <button data-v="attendance"><span class="ic">✓</span>Attendance</button>
+      <button data-v="results"><span class="ic">▤</span>Results</button>
+      <button data-v="timetable"><span class="ic">◴</span>My timetable</button>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div class="search">⌕&nbsp; Search my students…</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px"><span class="term">2nd Term · 2024/2025</span><span class="av">BO</span></div>
+    </div>
+    <div class="wrap">
+
+      <!-- DASHBOARD -->
+      <section class="view on" data-view="dash">
+        <div class="row-head"><div><h1 class="pt disp">Good day, Bayo</h1><div class="sub">Here's your teaching day at a glance</div></div></div>
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(165px,1fr));margin-bottom:22px">
+          <div class="card kpi"><div class="lab">My classes</div><div class="val disp">3</div><div class="dl" style="color:var(--mut)">form teacher of JSS1B</div></div>
+          <div class="card kpi"><div class="lab">My students</div><div class="val disp">90</div><div class="dl" style="color:var(--mut)">across 3 classes</div></div>
+          <div class="card kpi"><div class="lab">Results to submit</div><div class="val disp">1</div><div class="dl" style="color:#7A500D">JSS1A Maths — draft</div></div>
+          <div class="card kpi"><div class="lab">Attendance today</div><div class="val disp" style="font-size:19px;padding-top:6px">Not marked</div><div class="dl" style="color:#D64545">JSS1B awaiting</div></div>
+        </div>
+        <div class="grid" style="grid-template-columns:1.4fr 1fr">
+          <div class="card">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--ln);font-weight:600" class="disp">Today's timetable</div>
+            <div style="padding:6px 8px">
+              <div style="display:flex;justify-content:space-between;padding:10px 12px;border-radius:8px"><span><b>8:00</b> &nbsp;Mathematics — JSS1A</span><span class="tag">Room 4</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--pp)"><span><b>9:30</b> &nbsp;Mathematics — JSS2A</span><span class="tag">Room 7</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 12px;color:var(--mut)"><span><b>10:15</b> &nbsp;Free period</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--pp)"><span><b>12:15</b> &nbsp;Mathematics — JSS1B</span><span class="tag">Room 4</span></div>
+            </div>
+          </div>
+          <div class="card" style="padding:18px">
+            <div class="disp" style="font-weight:600;margin-bottom:12px">Quick actions</div>
+            <button class="btn btn-fr" data-go="attendance" style="width:100%;justify-content:center;margin-bottom:10px">✓ Take attendance</button>
+            <button class="btn btn-out" data-go="results" style="width:100%;justify-content:center">▤ Enter results</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- MY CLASSES -->
+      <section class="view" data-view="classes">
+        <h1 class="pt disp">My classes</h1><div class="sub" style="margin-bottom:20px">Only the classes you're assigned to</div>
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
+          <div class="card" style="padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><div class="disp" style="font-size:20px;font-weight:600">JSS1B</div><span class="tag">Form teacher</span></div><div class="sub" style="margin-top:8px">30 students · all subjects oversight</div><button class="btn btn-out btn-sm" data-go="attendance" style="margin-top:14px">Take attendance</button></div>
+          <div class="card" style="padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><div class="disp" style="font-size:20px;font-weight:600">JSS1A</div><span class="tag tag-g">Mathematics</span></div><div class="sub" style="margin-top:8px">32 students</div><button class="btn btn-out btn-sm" data-go="results" style="margin-top:14px">Enter results</button></div>
+          <div class="card" style="padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><div class="disp" style="font-size:20px;font-weight:600">JSS2A</div><span class="tag tag-g">Mathematics</span></div><div class="sub" style="margin-top:8px">28 students</div><button class="btn btn-out btn-sm" data-go="results" style="margin-top:14px">Enter results</button></div>
+        </div>
+      </section>
+
+      <!-- ATTENDANCE -->
+      <section class="view" data-view="attendance">
+        <div class="row-head"><div><h1 class="pt disp">Take attendance</h1><div class="sub">Today · mark your class register</div></div>
+          <button class="btn btn-fr" id="att-save">Save register</button></div>
+        <div class="card" style="padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label class="lbl" style="margin:0">Class</label>
+          <select id="att-class" class="fld" style="max-width:180px"><option>JSS1B</option><option>JSS1A</option><option>JSS2A</option></select>
+          <div style="margin-left:auto;display:flex;gap:8px;font-size:13px">
+            <span class="pill" style="background:#EAF3EE;color:#124A29"><b id="c-p">0</b> present</span>
+            <span class="pill" style="background:#FDF6E9;color:#7A500D"><b id="c-l">0</b> late</span>
+            <span class="pill" style="background:#FCEBEB;color:#791F1F"><b id="c-a">0</b> absent</span>
+          </div>
+        </div>
+        <div class="card" style="overflow:hidden"><table><thead><tr><th style="width:55%">Student</th><th style="text-align:right">Status</th></tr></thead><tbody id="att-rows"></tbody></table></div>
+        <div id="att-done" class="sub" style="display:none;color:#0F6E56;margin-top:12px;font-weight:600">✓ Register saved. Absent parents can be alerted from here.</div>
+      </section>
+
+      <!-- RESULTS -->
+      <section class="view" data-view="results">
+        <div class="row-head"><div><h1 class="pt disp">Enter results</h1><div class="sub">Mathematics · scores compute live</div></div>
+          <div style="display:flex;gap:8px"><button class="btn btn-out" id="res-save">Save draft</button><button class="btn btn-fr" id="res-submit">Submit for approval</button></div></div>
+        <div class="card" style="padding:14px 16px;margin-bottom:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <label class="lbl" style="margin:0">Class</label><select id="res-class" class="fld" style="max-width:160px"><option>JSS1A</option><option>JSS2A</option></select>
+          <label class="lbl" style="margin:0">Subject</label><select class="fld" style="max-width:170px" disabled><option>Mathematics</option></select>
+          <span class="pill" style="margin-left:auto">Draft — not submitted</span>
+        </div>
+        <div class="card" style="overflow:hidden"><table><thead><tr><th style="width:38%">Student</th><th style="text-align:center">CA1 (20)</th><th style="text-align:center">CA2 (20)</th><th style="text-align:center">Exam (60)</th><th style="text-align:center">Total</th><th style="text-align:center">Grade</th></tr></thead><tbody id="res-rows"></tbody></table></div>
+        <div id="res-done" class="sub" style="display:none;color:#0F6E56;margin-top:12px;font-weight:600">✓ Submitted to the principal for approval.</div>
+      </section>
+
+      <!-- TIMETABLE -->
+      <section class="view" data-view="timetable">
+        <h1 class="pt disp">My timetable</h1><div class="sub" style="margin-bottom:18px">Your weekly teaching schedule</div>
+        <div class="card" style="padding:14px;overflow-x:auto"><table class="tt" id="tt"></table></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  var fn=["Chidinma","Emeka","Aisha","Tunde","Ngozi","Bola","Ifeoma","Yusuf","Funke","Obinna","Halima","Segun"];
+  var lnn=["Okafor","Bello","Adeyemi","Eze","Mohammed","Olawale","Nwankwo","Ibrahim"];
+  function people(n,seed){var a=[];for(var i=0;i<n;i++){a.push({id:seed+"-"+i,name:fn[(i+seed.length)%fn.length]+" "+lnn[(i*3)%lnn.length],reg:"GFA/25/"+(1000+i+seed.length)});}return a;}
+
+  function show(v){
+    document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.dataset.view===v);});
+    document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v);});
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){show(b.dataset.v);};});
+  document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){show(b.dataset.go);};});
+
+  /* attendance */
+  var attState={};
+  function attRows(){
+    var cls=document.getElementById('att-class').value;
+    var list=people(12,cls);attState={};
+    var tb=document.getElementById('att-rows');tb.innerHTML='';
+    list.forEach(function(s,i){
+      attState[s.id]=i%9===0?'a':i%7===0?'l':'p';
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td style="font-weight:600">'+s.name+'<div style="font-size:12px;color:var(--mut);font-weight:400">'+s.reg+'</div></td><td style="text-align:right"><div class="att"><button data-s="'+s.id+'" data-x="p">Present</button><button data-s="'+s.id+'" data-x="l">Late</button><button data-s="'+s.id+'" data-x="a">Absent</button></div></td>';
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('.att button').forEach(function(b){b.onclick=function(){attState[b.dataset.s]=b.dataset.x;paintAtt();};});
+    paintAtt();document.getElementById('att-done').style.display='none';
+  }
+  function paintAtt(){
+    var p=0,l=0,a=0;
+    document.querySelectorAll('#att-rows .att').forEach(function(g){
+      var id=g.querySelector('button').dataset.s;var st=attState[id];
+      g.querySelectorAll('button').forEach(function(b){b.className=(b.dataset.x===st)?st:'';});
+    });
+    for(var k in attState){if(attState[k]==='p')p++;else if(attState[k]==='l')l++;else a++;}
+    document.getElementById('c-p').textContent=p;document.getElementById('c-l').textContent=l;document.getElementById('c-a').textContent=a;
+  }
+  document.getElementById('att-class').onchange=attRows;
+  document.getElementById('att-save').onclick=function(){document.getElementById('att-done').style.display='block';};
+
+  /* results */
+  function grade(t){if(t>=75)return['A1','#EAF3EE','#124A29'];if(t>=70)return['B2','#EAF3EE','#124A29'];if(t>=65)return['B3','#EAF3EE','#124A29'];if(t>=60)return['C4','#FDF6E9','#7A500D'];if(t>=55)return['C5','#FDF6E9','#7A500D'];if(t>=50)return['C6','#FDF6E9','#7A500D'];if(t>=45)return['D7','#FBEEDD','#915200'];if(t>=40)return['E8','#FBEEDD','#915200'];return['F9','#FCEBEB','#791F1F'];}
+  function resRows(){
+    var cls=document.getElementById('res-class').value;
+    var list=people(10,cls);
+    var tb=document.getElementById('res-rows');tb.innerHTML='';
+    list.forEach(function(s,i){
+      var ca1=12+((i*3)%8),ca2=11+((i*5)%9),ex=34+((i*7)%26);
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td style="font-weight:600">'+s.name+'<div style="font-size:12px;color:var(--mut);font-weight:400">'+s.reg+'</div></td>'+
+      '<td style="text-align:center"><input class="score" data-f="ca1" type="number" value="'+ca1+'"></td>'+
+      '<td style="text-align:center"><input class="score" data-f="ca2" type="number" value="'+ca2+'"></td>'+
+      '<td style="text-align:center"><input class="score" data-f="ex" type="number" value="'+ex+'"></td>'+
+      '<td style="text-align:center" class="tot">0</td><td style="text-align:center" class="grd"></td>';
+      tb.appendChild(tr);
+      function calc(){
+        var ins=tr.querySelectorAll('.score');var c1=+ins[0].value||0,c2=+ins[1].value||0,e=+ins[2].value||0;
+        var t=c1+c2+e;tr.querySelector('.tot').textContent=t;tr.querySelector('.tot').style.fontWeight='700';
+        var g=grade(t);tr.querySelector('.grd').innerHTML='<span class="gp" style="background:'+g[1]+';color:'+g[2]+'">'+g[0]+'</span>';
+      }
+      tr.querySelectorAll('.score').forEach(function(inp){
+        var max=inp.dataset.f==='ex'?60:20;
+        inp.oninput=function(){if(+inp.value>max)inp.value=max;if(+inp.value<0)inp.value=0;calc();};
+      });
+      calc();
+    });
+    document.getElementById('res-done').style.display='none';
+  }
+  document.getElementById('res-class').onchange=resRows;
+  document.getElementById('res-submit').onclick=function(){document.getElementById('res-done').style.display='block';};
+  document.getElementById('res-save').onclick=function(){var d=document.getElementById('res-done');d.textContent='✓ Draft saved.';d.style.color='#175C32';d.style.display='block';};
+
+  /* timetable */
+  function buildTT(){
+    var days=["Mon","Tue","Wed","Thu","Fri"],periods=["8:00","8:45","9:30","10:15","11:30","12:15"];
+    var plan={"Mon-8:00":"JSS1A","Mon-12:15":"JSS1B","Tue-9:30":"JSS2A","Wed-8:45":"JSS1A","Wed-11:30":"JSS1B","Thu-9:30":"JSS2A","Fri-8:00":"JSS1B","Fri-11:30":"JSS1A"};
+    var t=document.getElementById('tt');var h='<tr><th style="width:70px">Time</th>';
+    days.forEach(function(d){h+='<th>'+d+'</th>';});h+='</tr>';
+    periods.forEach(function(p){
+      h+='<tr><td style="font-weight:600">'+p+'</td>';
+      days.forEach(function(d){var k=d+"-"+p;h+='<td>'+(plan[k]?'<div class="cell"><b>MTH</b><div style="font-size:11px;color:#175C32">'+plan[k]+'</div></div>':'<span class="free">—</span>')+'</td>';});
+      h+='</tr>';
+    });
+    t.innerHTML=h;
+  }
+
+  attRows();resRows();buildTT();
+</script>
+</body>
+</html>
