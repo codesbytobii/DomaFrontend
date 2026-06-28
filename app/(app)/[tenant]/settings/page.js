@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { Building2, GraduationCap, CalendarRange, LayoutTemplate, Check, Lock, Palette, Upload } from "lucide-react";
+import { Building2, GraduationCap, CalendarRange, LayoutTemplate, Check, Lock, Palette, Upload, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useSessions, useGradeScale, useSchoolTemplates, updateSchool, setDefaultTemplate as apiSetDefault } from "@/lib/api";
+import { useSessions, useGradeScale, useSchoolTemplates, updateSchool, setDefaultTemplate as apiSetDefault, createSession, createTerm, openTerm, closeTerm, setCurrentTerm } from "@/lib/api";
 import { isTemplateAvailable, lowestPlanFor } from "@/lib/templates";
 import { getErrorMessage, cn } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
@@ -307,29 +307,204 @@ function GradingTab() {
 
 /* ─── Academic ─── */
 function AcademicTab() {
-  const { sessions, isLoading } = useSessions();
+  const { sessions, isLoading, mutate } = useSessions();
+  const [newSession, setNewSession] = useState(false);
+  const [sessionForm, setSessionForm] = useState({ name: "", start_date: "", end_date: "" });
+  const [newTermFor, setNewTermFor] = useState(null); // session id
+  const [termName, setTermName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleCreateSession = async () => {
+    if (!sessionForm.name.trim()) return toast.error("Enter a session name e.g. 2025/2026");
+    setSaving(true);
+    try {
+      await createSession(sessionForm);
+      toast.success(`${sessionForm.name} created`);
+      setSessionForm({ name: "", start_date: "", end_date: "" });
+      setNewSession(false);
+      mutate();
+    } catch (err) { toast.error(getErrorMessage(err)); }
+    finally { setSaving(false); }
+  };
+
+  const handleCreateTerm = async (sessionId) => {
+    if (!termName.trim()) return toast.error("Enter a term name e.g. 1st Term");
+    setSaving(true);
+    try {
+      await createTerm(sessionId, { name: termName });
+      toast.success(`${termName} created`);
+      setTermName("");
+      setNewTermFor(null);
+      mutate();
+    } catch (err) { toast.error(getErrorMessage(err)); }
+    finally { setSaving(false); }
+  };
+
+  const handleOpen = async (termId, termName) => {
+    try {
+      await openTerm(termId);
+      toast.success(`${termName} opened for result entry`);
+      mutate();
+    } catch (err) { toast.error(getErrorMessage(err)); }
+  };
+
+  const handleClose = async (termId, termName) => {
+    try {
+      await closeTerm(termId);
+      toast.success(`${termName} closed — results locked`);
+      mutate();
+    } catch (err) { toast.error(getErrorMessage(err)); }
+  };
+
+  const handleSetCurrent = async (termId) => {
+    try {
+      await setCurrentTerm(termId);
+      toast.success("Current term updated");
+      mutate();
+    } catch (err) { toast.error(getErrorMessage(err)); }
+  };
+
   return (
-    <Card className="max-w-2xl overflow-hidden">
-      <CardHeader><CardTitle>Sessions & terms</CardTitle></CardHeader>
-      <CardBody className="space-y-4">
-        {isLoading && <p className="text-sm text-ink/45">Loading…</p>}
-        {sessions.map((sess) => (
-          <div key={sess.id} className="rounded-xl border border-line p-4">
-            <div className="flex items-center justify-between">
-              <p className="font-medium text-ink">{sess.name}</p>
-              {sess.is_current && <Badge tone="forest">Current</Badge>}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(sess.terms || []).map((t) => (
-                <span key={t.id} className={cn("rounded-lg px-3 py-1.5 text-xs", t.is_current ? "bg-forest-50 font-medium text-forest-700" : "bg-paper text-ink/55")}>
-                  {t.name}{t.is_current ? " · active" : ""}
-                </span>
-              ))}
-            </div>
+    <div className="max-w-2xl space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-medium text-ink">Academic sessions & terms</h3>
+          <p className="mt-0.5 text-xs text-ink/45">
+            Create sessions and terms. Open a term to allow teachers to enter results. Close it to lock grades.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setNewSession(true)}>
+          <Plus size={14} /> New session
+        </Button>
+      </div>
+
+      {/* New session form */}
+      {newSession && (
+        <Card className="p-4">
+          <p className="mb-3 text-sm font-medium text-ink">New academic session</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Input
+              label="Session name"
+              value={sessionForm.name}
+              onChange={(e) => setSessionForm({ ...sessionForm, name: e.target.value })}
+              placeholder="e.g. 2025/2026"
+              containerClassName="sm:col-span-1"
+            />
+            <Input
+              label="Start date"
+              type="date"
+              value={sessionForm.start_date}
+              onChange={(e) => setSessionForm({ ...sessionForm, start_date: e.target.value })}
+            />
+            <Input
+              label="End date"
+              type="date"
+              value={sessionForm.end_date}
+              onChange={(e) => setSessionForm({ ...sessionForm, end_date: e.target.value })}
+            />
           </div>
-        ))}
-      </CardBody>
-    </Card>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" onClick={handleCreateSession} disabled={saving}>
+              {saving ? "Creating…" : "Create session"}
+            </Button>
+            <Button size="sm" variant="subtle" onClick={() => setNewSession(false)}>
+              Cancel
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {isLoading && <p className="text-sm text-ink/45">Loading…</p>}
+
+      {sessions.map((sess) => (
+        <Card key={sess.id} className="overflow-hidden">
+          {/* Session header */}
+          <div className="flex items-center justify-between border-b border-line px-5 py-3">
+            <div className="flex items-center gap-2.5">
+              <span className="font-display text-base font-semibold text-ink">{sess.name}</span>
+              {sess.is_current && <Badge tone="forest">Current session</Badge>}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setNewTermFor(sess.id); setTermName(""); }}
+            >
+              <Plus size={13} /> Add term
+            </Button>
+          </div>
+
+          {/* New term form */}
+          {newTermFor === sess.id && (
+            <div className="flex items-end gap-2 border-b border-line bg-paper px-5 py-3">
+              <Input
+                label="Term name"
+                value={termName}
+                onChange={(e) => setTermName(e.target.value)}
+                placeholder="e.g. 1st Term, 2nd Term, 3rd Term"
+                containerClassName="flex-1"
+              />
+              <Button size="sm" onClick={() => handleCreateTerm(sess.id)} disabled={saving}>
+                {saving ? "…" : "Create"}
+              </Button>
+              <Button size="sm" variant="subtle" onClick={() => setNewTermFor(null)}>
+                Cancel
+              </Button>
+            </div>
+          )}
+
+          {/* Terms list */}
+          <div className="divide-y divide-line">
+            {(!sess.terms || sess.terms.length === 0) && (
+              <p className="px-5 py-4 text-sm text-ink/40">No terms yet — click Add term.</p>
+            )}
+            {(sess.terms || []).map((term) => (
+              <div key={term.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                <div className="flex flex-1 items-center gap-2.5">
+                  <span className="text-sm font-medium text-ink">{term.name}</span>
+                  {term.is_current && <Badge tone="forest">Current</Badge>}
+                  {term.is_open
+                    ? <Badge tone="amber">Open for entry</Badge>
+                    : <Badge tone="red">Locked</Badge>
+                  }
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {!term.is_current && (
+                    <button
+                      onClick={() => handleSetCurrent(term.id)}
+                      className="rounded-lg border border-line px-2.5 py-1 text-xs font-medium text-ink/55 hover:border-forest-300 hover:bg-forest-50 hover:text-forest-700 transition-colors"
+                    >
+                      Set as current
+                    </button>
+                  )}
+                  {term.is_open ? (
+                    <button
+                      onClick={() => handleClose(term.id, term.name)}
+                      className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      Close entry
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleOpen(term.id, term.name)}
+                      className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                    >
+                      Open for entry
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ))}
+
+      <div className="rounded-xl border border-line bg-paper p-4 text-xs text-ink/50 leading-relaxed">
+        <strong className="text-ink">How terms work:</strong> The <strong>current term</strong> is used for attendance, fees and announcements.
+        <strong> Open for entry</strong> means teachers can enter results.
+        <strong> Locked</strong> means results are frozen — teachers cannot edit, but admins can still make corrections.
+        You can open old terms at any time to allow printing or corrections.
+      </div>
+    </div>
   );
 }
 
