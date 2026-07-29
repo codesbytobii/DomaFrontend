@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import { Mail, Lock, ArrowRight, GraduationCap } from "lucide-react";
 import { login } from "@/lib/auth";
@@ -9,13 +10,14 @@ import { getErrorMessage } from "@/lib/utils";
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 
-const DEMO = [
-  { label: "School Admin", email: "adunola@greenfield.edu.ng", password: "password" },
-  { label: "Teacher", email: "b.ojo@greenfield.edu.ng", password: "password" },
-  { label: "Parent", email: "james.okafor@gmail.com", password: "password" },
-  { label: "Super Admin", email: "admin@sembly.com", password: "sembly2025" },
-];
+const DEMO = [{ label: "Super Admin", email: "admin@sembly.com", password: "sembly2025" }];
 
+/**
+ * /login — platform (super_admin) login ONLY now. Every tenant role
+ * (school_admin, teacher, parent, student, accountant) logs in through their
+ * own school's /{slug}/login instead — the backend rejects a tenant
+ * account's credentials here (no school_slug is sent from this page).
+ */
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -25,9 +27,9 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { user, school } = await login(form);
+      const { user } = await login(form);
       toast.success("Welcome back!");
-      router.push(user?.role === "super_admin" ? "/platform" : `/${school?.subdomain}/dashboard`);
+      router.push(user?.role === "super_admin" ? "/platform" : "/login");
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -73,8 +75,11 @@ export default function LoginPage() {
             <span className="font-display text-2xl text-ink">Sembly</span>
           </div>
 
-          <h2 className="font-display text-3xl text-ink">Sign in</h2>
-          <p className="mt-1.5 text-sm text-ink/55">Welcome back. Enter your details to continue.</p>
+          <h2 className="font-display text-3xl text-ink">Platform sign in</h2>
+          <p className="mt-1.5 text-sm text-ink/55">
+            For the Sembly platform team. Looking for your school? Use the login link your school
+            administrator shared with you.
+          </p>
 
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <Input
@@ -102,7 +107,7 @@ export default function LoginPage() {
                 <input type="checkbox" className="rounded border-line text-forest-500 focus:ring-forest-300" />
                 Remember me
               </label>
-              <a href="#" className="font-medium text-forest-600 hover:underline">Forgot password?</a>
+              <Link href="/forgot-password" className="font-medium text-forest-600 hover:underline">Forgot password?</Link>
             </div>
             <Button type="submit" size="lg" className="w-full" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
