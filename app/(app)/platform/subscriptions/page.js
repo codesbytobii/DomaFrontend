@@ -10,28 +10,36 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/shared";
 const STATUS_LABEL = { active: "Active", trial: "Trial", past_due: "Past due", suspended: "Suspended" };
 const tone = (s) => statusTone(s === "past_due" || s === "suspended" ? "unpaid" : s === "trial" ? "partial" : "active");
 
-const PLANS = ["Starter", "School Suite", "Full School"];
-const PLAN_PRICE = { "Starter": 35000, "School Suite": 90000, "Full School": 150000 };
-
 export default function SubscriptionsPage() {
   const { items, isLoading } = useSubscriptions();
 
-  const planTotals = PLANS.map((plan) => {
-    const schools = items.filter((s) => s.plan === plan);
-    return { plan, count: schools.length, revenue: schools.reduce((t, s) => t + (s.mrr ?? 0), 0) };
-  });
+  // Plans are free-form now (no fixed catalog), so there's no fixed set of
+  // tiers to group into — show real totals across whatever plans actually
+  // exist instead of three hardcoded cards.
+  const totalMrr = items.reduce((t, s) => t + (s.mrr ?? 0), 0);
+  const activeCount = items.filter((s) => s.status !== "suspended").length;
+  const avgMrr = items.length ? Math.round(totalMrr / items.length) : 0;
+  const distinctPlans = new Set(items.map((s) => s.plan)).size;
 
   return (
     <div>
       <PageHeader title="Subscriptions" subtitle="Renewals, trials and past-due accounts" />
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {planTotals.map((p) => (
-          <Card key={p.plan} className="p-5">
-            <p className="font-medium text-ink">{p.plan}</p>
-            <p className="mt-1 font-display text-2xl text-forest-600">{formatNaira(p.revenue)}</p>
-            <p className="mt-2 text-xs text-ink/45">{p.count} school{p.count !== 1 ? "s" : ""} · {formatNaira(PLAN_PRICE[p.plan] || 0)}/mo each</p>
-          </Card>
-        ))}
+        <Card className="p-5">
+          <p className="font-medium text-ink">Total MRR</p>
+          <p className="mt-1 font-display text-2xl text-forest-600">{formatNaira(totalMrr)}</p>
+          <p className="mt-2 text-xs text-ink/45">Across {activeCount} active school{activeCount !== 1 ? "s" : ""}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="font-medium text-ink">Average price</p>
+          <p className="mt-1 font-display text-2xl text-forest-600">{formatNaira(avgMrr)}</p>
+          <p className="mt-2 text-xs text-ink/45">Per school, per month</p>
+        </Card>
+        <Card className="p-5">
+          <p className="font-medium text-ink">Distinct plans</p>
+          <p className="mt-1 font-display text-2xl text-forest-600">{distinctPlans}</p>
+          <p className="mt-2 text-xs text-ink/45">Custom terms set per school</p>
+        </Card>
       </div>
       <Card className="overflow-hidden">
         <Table>

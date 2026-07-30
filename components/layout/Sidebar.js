@@ -33,14 +33,14 @@ const NAV = {
     { href: "/students", label: "Students", icon: Users },
     { href: "/classes", label: "Classes & arms", icon: Building2 },
     { href: "/subjects", label: "Subjects", icon: BookOpen },
-    { href: "/results", label: "Results", icon: ClipboardList },
+    { href: "/results", label: "Results", icon: ClipboardList, module: "results" },
     { href: "/promotions", label: "Promotions", icon: ArrowUpNarrowWide },
-    { href: "/attendance", label: "Attendance", icon: CalendarCheck },
+    { href: "/attendance", label: "Attendance", icon: CalendarCheck, module: "attendance" },
     { href: "/timetable", label: "Timetable", icon: CalendarDays, locked: true },
     { group: "Finance" },
-    { href: "/fees", label: "Fees", icon: Wallet },
+    { href: "/fees", label: "Fees", icon: Wallet, module: "fees" },
     { group: "Communication" },
-    { href: "/communication", label: "Communication", icon: MessageSquare },
+    { href: "/communication", label: "Communication", icon: MessageSquare, module: "communication" },
     { group: "People" },
     { href: "/staff", label: "Staff", icon: Contact },
     { group: "School" },
@@ -55,19 +55,34 @@ const NAV = {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { group: "Teaching" },
     { href: "/classes", label: "My classes", icon: Building2 },
-    { href: "/results", label: "Results", icon: ClipboardList },
-    { href: "/attendance", label: "Attendance", icon: CalendarCheck },
+    { href: "/results", label: "Results", icon: ClipboardList, module: "results" },
+    { href: "/attendance", label: "Attendance", icon: CalendarCheck, module: "attendance" },
     { href: "/timetable", label: "Timetable", icon: CalendarDays, locked: true },
   ],
   parent: [
     { group: "My children" },
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/results", label: "Result sheet", icon: ClipboardList },
-    { href: "/attendance", label: "Attendance", icon: CalendarCheck },
-    { href: "/fees", label: "Fees", icon: Wallet },
-    { href: "/announcements", label: "Announcements", icon: Megaphone },
+    { href: "/results", label: "Result sheet", icon: ClipboardList, module: "results" },
+    { href: "/attendance", label: "Attendance", icon: CalendarCheck, module: "attendance" },
+    { href: "/fees", label: "Fees", icon: Wallet, module: "fees" },
+    { href: "/announcements", label: "Announcements", icon: Megaphone, module: "communication" },
   ],
 };
+
+/**
+ * Drops any nav item whose `module` isn't in the school's current plan, plus
+ * any group header left with nothing under it afterward. This is UX only —
+ * a link disappearing here doesn't grant or remove access; EnsureModuleEnabled
+ * on the backend is what actually blocks the request either way.
+ */
+function filterByPlan(items, planFeatures) {
+  const visible = items.filter((item) => !item.module || planFeatures.includes(item.module));
+  return visible.filter((item, idx) => {
+    if (!("group" in item) || item.href) return true;
+    const next = visible[idx + 1];
+    return next && !("group" in next && !next.href);
+  });
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -78,7 +93,7 @@ export default function Sidebar() {
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const setSidebarOpen = useStore((s) => s.setSidebarOpen);
 
-  const items = NAV[role] || NAV.school_admin;
+  const items = filterByPlan(NAV[role] || NAV.school_admin, school?.plan_features || []);
   const slug = useTenantSlug();
   const isSuper = role === "super_admin";
   const toHref = (page) => (isSuper ? page : `/${slug}${page}`);

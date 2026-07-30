@@ -3,12 +3,11 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Search } from "lucide-react";
-import { usePlatformSchools, changePlan, suspendSchool } from "@/lib/api";
+import { usePlatformSchools, changePlan, suspendSchool, deleteSchool } from "@/lib/api";
 import { formatNaira, getErrorMessage } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
 import Card from "@/components/shared/Card";
 import Input from "@/components/shared/Input";
-import Select from "@/components/shared/Select";
 import Button from "@/components/shared/Button";
 import Badge, { statusTone } from "@/components/shared/Badge";
 import Modal from "@/components/shared/Modal";
@@ -21,15 +20,24 @@ export default function PlatformSchools() {
   const [query, setQuery] = useState("");
   const { items, isLoading, mutate } = usePlatformSchools(query);
   const [detail, setDetail] = useState(null);
-  const [planChange, setPlanChange] = useState("");
+  const [planName, setPlanName] = useState("");
+  const [planPrice, setPlanPrice] = useState("");
   const [acting, setActing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
 
+  const openDetail = (s) => { setDetail(s); setPlanName(s.plan); setPlanPrice(String(s.mrr ?? 0)); setConfirmDelete(false); setDeleteText(""); };
+
+  // Any label, any price — super_admin sets subscription terms per school
+  // rather than picking from a fixed catalog.
   const handleChangePlan = async () => {
-    if (!planChange || !detail) return;
+    if (!planName.trim() || !detail) return;
+    const mrr = Number(planPrice);
+    if (Number.isNaN(mrr) || mrr < 0) return toast.error("Enter a valid monthly price");
     setActing(true);
     try {
-      await changePlan(detail.id, planChange);
-      toast.success(`Plan changed to ${planChange}`);
+      await changePlan(detail.id, { plan: planName.trim(), mrr });
+      toast.success(`${detail.name}'s subscription updated`);
       mutate(); setDetail(null);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setActing(false); }
@@ -46,6 +54,21 @@ export default function PlatformSchools() {
     finally { setActing(false); }
   };
 
+  // Deleting a school is permanent — every student, result, invoice, and
+  // staff/parent account under it is gone too. Typing the school's exact
+  // name is the only guard against a misclick on something this
+  // irreversible.
+  const handleDelete = async () => {
+    if (!detail || deleteText !== detail.name) return;
+    setActing(true);
+    try {
+      await deleteSchool(detail.id);
+      toast.success(`${detail.name} deleted`);
+      mutate(); setDetail(null); setConfirmDelete(false); setDeleteText("");
+    } catch (err) { toast.error(getErrorMessage(err)); }
+    finally { setActing(false); }
+  };
+
   return (
     <div>
       <PageHeader title="Schools" subtitle="Every school on the platform" />
@@ -56,7 +79,7 @@ export default function PlatformSchools() {
           <TBody>
             {isLoading && <TR><TD colSpan={6} className="py-8 text-center text-ink/45">Loading schools…</TD></TR>}
             {items.map((s) => (
-              <TR key={s.id} className="cursor-pointer" onClick={() => { setDetail(s); setPlanChange(s.plan); }}>
+              <TR key={s.id} className="cursor-pointer" onClick={() => openDetail(s)}>
                 <TD><span className="font-medium text-ink">{s.name}</span><span className="block text-xs text-ink/45">{s.subdomain}.sembly.com</span></TD>
                 <TD>{s.plan}</TD>
                 <TD className="text-right">{s.students ?? 0}</TD>
@@ -73,7 +96,7 @@ export default function PlatformSchools() {
       <Modal open={Boolean(detail)} onClose={() => setDetail(null)} title={detail?.name || ""}
         footer={<>
           <Button variant="subtle" onClick={() => setDetail(null)}>Close</Button>
-          <Button variant="outline" onClick={handleChangePlan} disabled={acting || planChange === detail?.plan}>{acting ? "Saving…" : "Change plan"}</Button>
+          <Button variant="outline" onClick={handleChangePlan} disabled={acting || (planName === detail?.plan && Number(planPrice) === detail?.mrr)}>{acting ? "Saving…" : "Save subscription"}</Button>
           <Button variant="danger" onClick={handleSuspend} disabled={acting || detail?.status === "suspended"}>{detail?.status === "suspended" ? "Suspended" : "Suspend"}</Button>
         </>}>
         {detail && (
@@ -83,12 +106,38 @@ export default function PlatformSchools() {
               <div className="rounded-xl bg-paper p-3"><p className="text-xs text-ink/50">Students</p><p className="mt-1 font-display text-lg">{detail.students ?? 0}</p></div>
               <div className="rounded-xl bg-paper p-3"><p className="text-xs text-ink/50">Monthly</p><p className="mt-1 font-display text-lg text-forest-600">{formatNaira(detail.mrr ?? 0)}</p></div>
             </div>
-            <div>
-              <Select label="Plan" options={[{ value: "Starter", label: "Starter — ₦35,000/mo" }, { value: "School Suite", label: "School Suite — ₦90,000/mo" }, { value: "Full School", label: "Full School — ₦150,000/mo" }]} value={planChange} onChange={(e) => setPlanChange(e.target.value)} />
+
+            {/* Free-form subscription — no fixed catalog. Set whatever plan
+               name and price you've actually agreed with this school. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input label="Plan name" value={planName} onChange={(e) => setPlanName(e.target.value)} placeholder="e.g. Custom, Full School + SMS add-on" />
+              <Input label="Monthly price (₦)" type="number" min="0" value={planPrice} onChange={(e) => setPlanPrice(e.target.value)} placeholder="e.g. 120000" />
             </div>
+
             <div className="border-t border-line pt-3 text-sm">
               {detail.owner && <div className="flex justify-between py-1"><span className="text-ink/55">Owner</span><span>{detail.owner}</span></div>}
               {detail.renews_at && <div className="flex justify-between py-1"><span className="text-ink/55">Renews</span><span>{detail.renews_at}</span></div>}
+            </div>
+
+            {/* Danger zone — separated visually and gated behind typing the
+               school's name, since this action can't be undone. */}
+            <div className="rounded-xl border border-red-200 bg-red-50/50 p-3">
+              <p className="text-sm font-medium text-red-700">Danger zone</p>
+              {!confirmDelete ? (
+                <>
+                  <p className="mt-1 text-xs text-red-600/80">Permanently deletes this school and everything under it — students, results, fees, staff and parent accounts. This cannot be undone.</p>
+                  <Button variant="danger" className="mt-3" onClick={() => setConfirmDelete(true)}>Delete school…</Button>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-xs text-red-600/80">Type <span className="font-mono font-semibold">{detail.name}</span> to confirm permanent deletion.</p>
+                  <Input containerClassName="mt-2" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} placeholder={detail.name} />
+                  <div className="mt-3 flex gap-2">
+                    <Button variant="subtle" onClick={() => { setConfirmDelete(false); setDeleteText(""); }}>Cancel</Button>
+                    <Button variant="danger" onClick={handleDelete} disabled={acting || deleteText !== detail.name}>{acting ? "Deleting…" : "Permanently delete"}</Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

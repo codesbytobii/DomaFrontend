@@ -54,7 +54,7 @@ export default function AppShell({ children }) {
       <div className="grid min-h-screen place-items-center bg-paper">
         <div className="flex items-center gap-3 text-ink/50">
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-forest-300 border-t-forest-600" />
-          Loading your workspace…
+          Loading....
         </div>
       </div>
     );
