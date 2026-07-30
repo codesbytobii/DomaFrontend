@@ -3,11 +3,12 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Search } from "lucide-react";
-import { usePlatformSchools, changePlan, suspendSchool, deleteSchool } from "@/lib/api";
+import { usePlatformSchools, changePlan, suspendSchool, deleteSchool, useSubscriptionPlans } from "@/lib/api";
 import { formatNaira, getErrorMessage } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
 import Card from "@/components/shared/Card";
 import Input from "@/components/shared/Input";
+import Select from "@/components/shared/Select";
 import Button from "@/components/shared/Button";
 import Badge, { statusTone } from "@/components/shared/Badge";
 import Modal from "@/components/shared/Modal";
@@ -19,24 +20,23 @@ const tone = (s) => statusTone(s === "past_due" || s === "suspended" ? "unpaid" 
 export default function PlatformSchools() {
   const [query, setQuery] = useState("");
   const { items, isLoading, mutate } = usePlatformSchools(query);
+  const { items: plans } = useSubscriptionPlans();
+  const activePlans = plans.filter((p) => p.is_active);
   const [detail, setDetail] = useState(null);
-  const [planName, setPlanName] = useState("");
-  const [planPrice, setPlanPrice] = useState("");
+  const [planId, setPlanId] = useState("");
   const [acting, setActing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteText, setDeleteText] = useState("");
 
-  const openDetail = (s) => { setDetail(s); setPlanName(s.plan); setPlanPrice(String(s.mrr ?? 0)); setConfirmDelete(false); setDeleteText(""); };
+  const openDetail = (s) => { setDetail(s); setPlanId(s.subscription_plan_id ? String(s.subscription_plan_id) : ""); setConfirmDelete(false); setDeleteText(""); };
 
-  // Any label, any price — super_admin sets subscription terms per school
-  // rather than picking from a fixed catalog.
+  // Reassigns to a different catalog plan — no free-text override anymore;
+  // plan name/price only ever come from what's set up under Subscriptions.
   const handleChangePlan = async () => {
-    if (!planName.trim() || !detail) return;
-    const mrr = Number(planPrice);
-    if (Number.isNaN(mrr) || mrr < 0) return toast.error("Enter a valid monthly price");
+    if (!planId || !detail) return;
     setActing(true);
     try {
-      await changePlan(detail.id, { plan: planName.trim(), mrr });
+      await changePlan(detail.id, { subscription_plan_id: Number(planId) });
       toast.success(`${detail.name}'s subscription updated`);
       mutate(); setDetail(null);
     } catch (err) { toast.error(getErrorMessage(err)); }
@@ -96,7 +96,7 @@ export default function PlatformSchools() {
       <Modal open={Boolean(detail)} onClose={() => setDetail(null)} title={detail?.name || ""}
         footer={<>
           <Button variant="subtle" onClick={() => setDetail(null)}>Close</Button>
-          <Button variant="outline" onClick={handleChangePlan} disabled={acting || (planName === detail?.plan && Number(planPrice) === detail?.mrr)}>{acting ? "Saving…" : "Save subscription"}</Button>
+          <Button variant="outline" onClick={handleChangePlan} disabled={acting || !planId || planId === String(detail?.subscription_plan_id || "")}>{acting ? "Saving…" : "Save subscription"}</Button>
           <Button variant="danger" onClick={handleSuspend} disabled={acting || detail?.status === "suspended"}>{detail?.status === "suspended" ? "Suspended" : "Suspend"}</Button>
         </>}>
         {detail && (
@@ -107,12 +107,15 @@ export default function PlatformSchools() {
               <div className="rounded-xl bg-paper p-3"><p className="text-xs text-ink/50">Monthly</p><p className="mt-1 font-display text-lg text-forest-600">{formatNaira(detail.mrr ?? 0)}</p></div>
             </div>
 
-            {/* Free-form subscription — no fixed catalog. Set whatever plan
-               name and price you've actually agreed with this school. */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input label="Plan name" value={planName} onChange={(e) => setPlanName(e.target.value)} placeholder="e.g. Custom, Full School + SMS add-on" />
-              <Input label="Monthly price (₦)" type="number" min="0" value={planPrice} onChange={(e) => setPlanPrice(e.target.value)} placeholder="e.g. 120000" />
-            </div>
+            {/* Reassign to a different catalog plan — plan name/price are
+               managed once, under Platform > Subscriptions. */}
+            <Select
+              label="Subscription plan"
+              options={activePlans.map((p) => ({ value: String(p.id), label: `${p.name} — ${formatNaira(p.mrr)}/mo` }))}
+              value={planId}
+              onChange={(e) => setPlanId(e.target.value)}
+              placeholder="Select a plan"
+            />
 
             <div className="border-t border-line pt-3 text-sm">
               {detail.owner && <div className="flex justify-between py-1"><span className="text-ink/55">Owner</span><span>{detail.owner}</span></div>}

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { CheckCircle2 } from "lucide-react";
-import { onboardSchool } from "@/lib/api";
-import { getErrorMessage, NG_STATES, SCHOOL_TYPES } from "@/lib/utils";
+import { onboardSchool, useSubscriptionPlans } from "@/lib/api";
+import { getErrorMessage, formatNaira, NG_STATES, SCHOOL_TYPES } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
 import Card, { CardBody } from "@/components/shared/Card";
 import Input from "@/components/shared/Input";
@@ -12,10 +12,13 @@ import Select from "@/components/shared/Select";
 import Button from "@/components/shared/Button";
 
 export default function OnboardingPage() {
+  const { items: plans, isLoading: plansLoading } = useSubscriptionPlans();
+  const activePlans = plans.filter((p) => p.is_active);
+
   const [form, setForm] = useState({
     name: "", sub: "", rcNumber: "", schoolType: "", yearEstablished: "", motto: "",
     state: "", lga: "", phone: "", email: "",
-    plan: "", mrr: "", trialDays: "14", owner: "", ownerEmail: "",
+    subscriptionPlanId: "", trialDays: "14", owner: "", ownerEmail: "",
     gradingSystem: "WAEC (A1–F9)",
   });
   const [subTouched, setSubTouched] = useState(false);
@@ -31,14 +34,13 @@ export default function OnboardingPage() {
   const submit = async () => {
     if (!form.name) return toast.error("School name is required");
     if (!form.sub) return toast.error("Subdomain is required");
-    if (!form.plan.trim()) return toast.error("Plan name is required");
-    if (form.mrr === "" || Number(form.mrr) < 0) return toast.error("Enter a valid monthly price");
+    if (!form.subscriptionPlanId) return toast.error("Select a subscription plan");
     if (!form.owner || !form.ownerEmail) return toast.error("Owner name and email are required");
     setLoading(true);
     try {
       const school = await onboardSchool({
         name: form.name, subdomain: form.sub,
-        plan: form.plan.trim(), mrr: Number(form.mrr),
+        subscription_plan_id: Number(form.subscriptionPlanId),
         trial_days: form.trialDays ? Number(form.trialDays) : undefined,
         owner_name: form.owner, owner_email: form.ownerEmail,
       });
@@ -68,7 +70,7 @@ export default function OnboardingPage() {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-ink/40">Workspace URL</p>
             <p className="mt-2 font-mono text-sm text-forest-700">sembly.com/{done.subdomain || form.sub}</p>
           </div>
-          <Button className="mt-6" variant="outline" onClick={() => { setDone(null); setForm({ name:"",sub:"",rcNumber:"",schoolType:"",yearEstablished:"",motto:"",state:"",lga:"",phone:"",email:"",plan:"",mrr:"",trialDays:"14",owner:"",ownerEmail:"",gradingSystem:"WAEC (A1–F9)" }); setSubTouched(false); }}>
+          <Button className="mt-6" variant="outline" onClick={() => { setDone(null); setForm({ name:"",sub:"",rcNumber:"",schoolType:"",yearEstablished:"",motto:"",state:"",lga:"",phone:"",email:"",subscriptionPlanId:"",trialDays:"14",owner:"",ownerEmail:"",gradingSystem:"WAEC (A1–F9)" }); setSubTouched(false); }}>
             Onboard another school
           </Button>
         </Card>
@@ -108,11 +110,13 @@ export default function OnboardingPage() {
               <span className="text-sm text-ink/55">.sembly.com</span>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Input label="Plan name" value={form.plan} onChange={u("plan")} placeholder="e.g. School Suite, Custom" containerClassName="sm:col-span-2"
-              hint="Whatever you've agreed with the school — not a fixed tier" />
-            <Input label="Monthly price (₦)" type="number" min="0" value={form.mrr} onChange={u("mrr")} placeholder="e.g. 90000" />
-          </div>
+          <Select
+            label="Subscription plan"
+            options={activePlans.map((p) => ({ value: String(p.id), label: `${p.name} — ${formatNaira(p.mrr)}/mo` }))}
+            value={form.subscriptionPlanId}
+            onChange={u("subscriptionPlanId")}
+            placeholder={plansLoading ? "Loading plans…" : activePlans.length ? "Select a plan" : "No active plans — create one under Subscriptions first"}
+          />
           <Input label="Trial length (days)" type="number" min="0" value={form.trialDays} onChange={u("trialDays")} placeholder="14" containerClassName="mt-2 max-w-[160px]" />
 
           <Sec num="3" title="Location & contact" />
@@ -137,7 +141,7 @@ export default function OnboardingPage() {
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="subtle" onClick={() => setForm({ name:"",sub:"",rcNumber:"",schoolType:"",yearEstablished:"",motto:"",state:"",lga:"",phone:"",email:"",plan:"",mrr:"",trialDays:"14",owner:"",ownerEmail:"",gradingSystem:"WAEC (A1–F9)" })}>Clear form</Button>
+            <Button variant="subtle" onClick={() => setForm({ name:"",sub:"",rcNumber:"",schoolType:"",yearEstablished:"",motto:"",state:"",lga:"",phone:"",email:"",subscriptionPlanId:"",trialDays:"14",owner:"",ownerEmail:"",gradingSystem:"WAEC (A1–F9)" })}>Clear form</Button>
             <Button onClick={submit} disabled={loading}>{loading ? "Creating school…" : "Create school & send credentials"}</Button>
           </div>
         </CardBody>
