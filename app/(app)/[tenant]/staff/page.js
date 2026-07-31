@@ -30,6 +30,39 @@ const EMPTY_FORM = {
   nextOfKinName: "", nextOfKinPhone: "", nextOfKinRelationship: "",
 };
 
+// These four were previously defined INSIDE StaffPage, which meant React
+// saw a brand-new component type on every keystroke (StaffPage re-renders
+// on every setForm call) and remounted the underlying <input> each time —
+// that's what was stealing focus after one character. Module scope keeps
+// their identity stable across renders.
+const SI = ({ value, onChange, placeholder, type = "text", disabled, mono }) => (
+  <input type={type} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
+    className={`h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink placeholder:text-ink/35 focus:border-forest-300 focus:outline-none focus:ring-2 focus:ring-forest-200 disabled:bg-paper ${mono ? "font-mono text-xs" : ""}`} />
+);
+const SS = ({ value, onChange, options, placeholder }) => (
+  <select value={value} onChange={onChange}
+    className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-forest-300 focus:outline-none focus:ring-2 focus:ring-forest-200">
+    {placeholder && <option value="">{placeholder}</option>}
+    {options.map((o) => <option key={typeof o === "string" ? o : o.value} value={typeof o === "string" ? o : o.value}>{typeof o === "string" ? o : o.label}</option>)}
+  </select>
+);
+const F = ({ label, required, hint, children }) => (
+  <div style={{ marginBottom: 12 }}>
+    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/50">
+      {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+    </label>
+    {children}
+    {hint && <p className="mt-1 text-[11px] text-ink/40 leading-tight">{hint}</p>}
+  </div>
+);
+const Sec = ({ letter, title }) => (
+  <div className="flex items-center gap-2.5 my-4 first:mt-1">
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-forest-600 text-[10px] font-semibold text-white">{letter}</span>
+    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/50 whitespace-nowrap">{title}</span>
+    <div className="flex-1 h-px bg-line" />
+  </div>
+);
+
 export default function StaffPage() {
   const { items: staff, isLoading, mutate } = useStaff();
   const { items: assignments, mutate: mutateAssignments } = useTeachingAssignments();
@@ -41,7 +74,11 @@ export default function StaffPage() {
   const [guarantors, setGuarantors] = useState([{ name: "", relationship: "", phone: "", address: "" }]);
   const [photo, setPhoto] = useState(null);
   const photoRef = useRef();
-  const staffId = `STF/${new Date().getFullYear()}/${String(Math.floor(Math.random() * 900) + 100)}`;
+  // No client-side ID here anymore — it's server-generated on save (see
+  // StaffController::store), sequential per school, and actually persisted.
+  // Faking one client-side (as this used to do with Math.random()) meant a
+  // different number on every render and nothing that matched the real
+  // record.
 
   const u = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
 
@@ -70,45 +107,17 @@ export default function StaffPage() {
     if (!form.email) return toast.error("Email is required");
     setLoading(true);
     try {
-      await createStaff({
+      const created = await createStaff({
         name: `${form.surname} ${form.firstName}${form.middleName ? " " + form.middleName : ""}`,
         email: form.email,
         role: form.role.toLowerCase().replace(/\s+/g, "_"),
         subject: form.subjects,
       });
-      toast.success(`${form.firstName} ${form.surname} registered`);
+      toast.success(`${form.firstName} ${form.surname} registered — Staff ID: ${created.staff_number}`);
       mutate(); handleClose();
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
   };
-
-  const SI = ({ value, onChange, placeholder, type = "text", disabled, mono }) => (
-    <input type={type} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
-      className={`h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink placeholder:text-ink/35 focus:border-forest-300 focus:outline-none focus:ring-2 focus:ring-forest-200 disabled:bg-paper ${mono ? "font-mono text-xs" : ""}`} />
-  );
-  const SS = ({ value, onChange, options, placeholder }) => (
-    <select value={value} onChange={onChange}
-      className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink focus:border-forest-300 focus:outline-none focus:ring-2 focus:ring-forest-200">
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map((o) => <option key={typeof o === "string" ? o : o.value} value={typeof o === "string" ? o : o.value}>{typeof o === "string" ? o : o.label}</option>)}
-    </select>
-  );
-  const F = ({ label, required, hint, children }) => (
-    <div style={{ marginBottom: 12 }}>
-      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/50">
-        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
-      {children}
-      {hint && <p className="mt-1 text-[11px] text-ink/40 leading-tight">{hint}</p>}
-    </div>
-  );
-  const Sec = ({ letter, title }) => (
-    <div className="flex items-center gap-2.5 my-4 first:mt-1">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-forest-600 text-[10px] font-semibold text-white">{letter}</span>
-      <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/50 whitespace-nowrap">{title}</span>
-      <div className="flex-1 h-px bg-line" />
-    </div>
-  );
 
   return (
     <div>
@@ -120,12 +129,13 @@ export default function StaffPage() {
       <Card className="overflow-hidden mb-6">
         <Table>
           <THead>
-            <TR><TH>Name</TH><TH>Role</TH><TH>Subject</TH><TH>Email</TH></TR>
+            <TR><TH>Staff ID</TH><TH>Name</TH><TH>Role</TH><TH>Subject</TH><TH>Email</TH></TR>
           </THead>
           <TBody>
-            {isLoading && <TR><TD colSpan={4} className="py-8 text-center text-ink/45">Loading staff…</TD></TR>}
+            {isLoading && <TR><TD colSpan={5} className="py-8 text-center text-ink/45">Loading staff…</TD></TR>}
             {staff.map((m) => (
               <TR key={m.id}>
+                <TD className="font-mono text-xs text-ink/55">{m.staff_number || "—"}</TD>
                 <TD>
                   <div className="flex items-center gap-3">
                     <Avatar name={m.name} size="sm" />
@@ -138,7 +148,7 @@ export default function StaffPage() {
               </TR>
             ))}
             {!isLoading && staff.length === 0 && (
-              <TR><TD colSpan={4} className="py-8 text-center text-ink/45">No staff registered yet.</TD></TR>
+              <TR><TD colSpan={5} className="py-8 text-center text-ink/45">No staff registered yet.</TD></TR>
             )}
           </TBody>
         </Table>
@@ -167,7 +177,7 @@ export default function StaffPage() {
           </div>
           <div className="text-right">
             <p className="text-[10px] text-white/50">Staff ID</p>
-            <p className="font-mono text-sm font-semibold text-white tracking-wider">{staffId}</p>
+            <p className="font-mono text-sm font-semibold text-white/70 tracking-wider">Assigned on save</p>
           </div>
         </div>
 
@@ -222,7 +232,7 @@ export default function StaffPage() {
             <div>
               <Sec letter="B" title="Employment details" />
               <div className="grid grid-cols-3 gap-x-3">
-                <F label="Staff ID" hint="Auto-generated"><SI value={staffId} onChange={() => {}} disabled mono /></F>
+                <F label="Staff ID" hint="Assigned automatically when you save — sequential per school, e.g. STF/2026/003"><SI value="Assigned on save" onChange={() => {}} disabled mono /></F>
                 <F label="Date of employment" required><SI value={form.employmentDate} onChange={u("employmentDate")} type="date" /></F>
                 <F label="Employment type" required><SS value={form.employmentType} onChange={u("employmentType")} options={EMPLOYMENT_TYPES} /></F>
               </div>
