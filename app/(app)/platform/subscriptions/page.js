@@ -4,15 +4,17 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Check, Pencil, Trash2, Users } from "lucide-react";
 import { useSubscriptionPlans, createSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from "@/lib/api";
-import { formatNaira, getErrorMessage, MODULES } from "@/lib/utils";
+import { formatNaira, getErrorMessage, MODULES, BILLING_CYCLES } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
 import Card from "@/components/shared/Card";
 import Input from "@/components/shared/Input";
+import Select from "@/components/shared/Select";
 import Button from "@/components/shared/Button";
 import Badge from "@/components/shared/Badge";
 import Modal from "@/components/shared/Modal";
 
-const EMPTY_FORM = { name: "", description: "", mrr: "", features: [], is_active: true };
+const EMPTY_FORM = { name: "", description: "", mrr: "", billing_cycle: "monthly", features: [], is_active: true };
+const CYCLE_SUFFIX = { monthly: "/mo", quarterly: "/qtr", biannual: "/6mo", annual: "/yr" };
 
 /**
  * Platform > Subscriptions — the plan catalog super_admin manages. Schools
@@ -28,7 +30,7 @@ export default function SubscriptionsPage() {
   const openCreate = () => { setEditing({}); setForm(EMPTY_FORM); };
   const openEdit = (plan) => {
     setEditing(plan);
-    setForm({ name: plan.name, description: plan.description || "", mrr: String(plan.mrr), features: plan.features || [], is_active: plan.is_active });
+    setForm({ name: plan.name, description: plan.description || "", mrr: String(plan.mrr), billing_cycle: plan.billing_cycle || "monthly", features: plan.features || [], is_active: plan.is_active });
   };
   const close = () => setEditing(null);
 
@@ -42,10 +44,10 @@ export default function SubscriptionsPage() {
   const save = async () => {
     if (!form.name.trim()) return toast.error("Plan name is required");
     const mrr = Number(form.mrr);
-    if (Number.isNaN(mrr) || mrr < 0) return toast.error("Enter a valid monthly price");
+    if (Number.isNaN(mrr) || mrr < 0) return toast.error("Enter a valid price");
     if (form.features.length === 0) return toast.error("Select at least one module this plan includes");
     setSaving(true);
-    const payload = { name: form.name.trim(), description: form.description.trim() || null, mrr, features: form.features, is_active: form.is_active };
+    const payload = { name: form.name.trim(), description: form.description.trim() || null, mrr, billing_cycle: form.billing_cycle, features: form.features, is_active: form.is_active };
     try {
       if (editing?.id) {
         await updateSubscriptionPlan(editing.id, payload);
@@ -91,7 +93,12 @@ export default function SubscriptionsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-display text-lg text-ink">{plan.name}</p>
-                <p className="mt-0.5 font-display text-2xl text-forest-600">{formatNaira(plan.mrr)}<span className="text-sm font-sans font-normal text-ink/45">/mo</span></p>
+                <p className="mt-0.5 font-display text-2xl text-forest-600">
+                  {formatNaira(plan.mrr)}<span className="text-sm font-sans font-normal text-ink/45">{CYCLE_SUFFIX[plan.billing_cycle] || "/mo"}</span>
+                </p>
+                {plan.billing_cycle !== "monthly" && (
+                  <p className="text-xs text-ink/45">≈ {formatNaira(plan.monthly_equivalent)}/mo equivalent</p>
+                )}
               </div>
               {!plan.is_active && <Badge tone="gray">Inactive</Badge>}
             </div>
@@ -127,9 +134,11 @@ export default function SubscriptionsPage() {
           <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save plan"}</Button>
         </>}>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input label="Plan name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. School Suite" />
-            <Input label="Monthly price (₦)" type="number" min="0" value={form.mrr} onChange={(e) => setForm({ ...form, mrr: e.target.value })} placeholder="e.g. 90000" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Input label="Plan name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. School Suite" containerClassName="sm:col-span-1" />
+            <Input label="Price (₦)" type="number" min="0" value={form.mrr} onChange={(e) => setForm({ ...form, mrr: e.target.value })} placeholder="e.g. 90000" />
+            <Select label="Billing cycle" value={form.billing_cycle} onChange={(e) => setForm({ ...form, billing_cycle: e.target.value })}
+              options={Object.entries(BILLING_CYCLES).map(([value, c]) => ({ value, label: c.label }))} />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-ink/70">Description (optional)</label>

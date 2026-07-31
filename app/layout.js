@@ -22,7 +22,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: "Sembly — School Management",
+  title: "Edvora — No. 1 School Management System",
   description: "Premium school management for Nigerian private schools.",
 };
 

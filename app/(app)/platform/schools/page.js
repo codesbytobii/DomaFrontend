@@ -4,7 +4,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { Search } from "lucide-react";
 import { usePlatformSchools, changePlan, suspendSchool, deleteSchool, useSubscriptionPlans } from "@/lib/api";
-import { formatNaira, getErrorMessage } from "@/lib/utils";
+import { formatNaira, getErrorMessage, BILLING_CYCLES } from "@/lib/utils";
 import PageHeader from "@/components/shared/PageHeader";
 import Card from "@/components/shared/Card";
 import Input from "@/components/shared/Input";
@@ -24,19 +24,25 @@ export default function PlatformSchools() {
   const activePlans = plans.filter((p) => p.is_active);
   const [detail, setDetail] = useState(null);
   const [planId, setPlanId] = useState("");
+  const [duration, setDuration] = useState("1");
   const [acting, setActing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteText, setDeleteText] = useState("");
+  const selectedPlan = activePlans.find((p) => String(p.id) === planId);
+  const cycle = BILLING_CYCLES[selectedPlan?.billing_cycle] || BILLING_CYCLES.monthly;
 
-  const openDetail = (s) => { setDetail(s); setPlanId(s.subscription_plan_id ? String(s.subscription_plan_id) : ""); setConfirmDelete(false); setDeleteText(""); };
+  const openDetail = (s) => { setDetail(s); setPlanId(s.subscription_plan_id ? String(s.subscription_plan_id) : ""); setDuration("1"); setConfirmDelete(false); setDeleteText(""); };
 
-  // Reassigns to a different catalog plan — no free-text override anymore;
-  // plan name/price only ever come from what's set up under Subscriptions.
+  // Reassigns to a different catalog plan and/or a new term length — no
+  // free-text override anymore; plan name/price only ever come from what's
+  // set up under Subscriptions. This is also how a legacy trial-status
+  // school gets moved onto a real term (always sets status to active).
   const handleChangePlan = async () => {
     if (!planId || !detail) return;
+    if (!duration || Number(duration) < 1) return toast.error("Enter how many cycles this term runs for");
     setActing(true);
     try {
-      await changePlan(detail.id, { subscription_plan_id: Number(planId) });
+      await changePlan(detail.id, { subscription_plan_id: Number(planId), duration: Number(duration) });
       toast.success(`${detail.name}'s subscription updated`);
       mutate(); setDetail(null);
     } catch (err) { toast.error(getErrorMessage(err)); }
@@ -96,7 +102,7 @@ export default function PlatformSchools() {
       <Modal open={Boolean(detail)} onClose={() => setDetail(null)} title={detail?.name || ""}
         footer={<>
           <Button variant="subtle" onClick={() => setDetail(null)}>Close</Button>
-          <Button variant="outline" onClick={handleChangePlan} disabled={acting || !planId || planId === String(detail?.subscription_plan_id || "")}>{acting ? "Saving…" : "Save subscription"}</Button>
+          <Button variant="outline" onClick={handleChangePlan} disabled={acting || !planId || !duration || Number(duration) < 1}>{acting ? "Saving…" : "Save subscription"}</Button>
           <Button variant="danger" onClick={handleSuspend} disabled={acting || detail?.status === "suspended"}>{detail?.status === "suspended" ? "Suspended" : "Suspend"}</Button>
         </>}>
         {detail && (
@@ -104,18 +110,30 @@ export default function PlatformSchools() {
             <div className="flex items-center justify-between"><span className="text-sm text-ink/55">{detail.subdomain}.sembly.com</span><Badge tone={tone(detail.status)}>{STATUS_LABEL[detail.status] || detail.status}</Badge></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-paper p-3"><p className="text-xs text-ink/50">Students</p><p className="mt-1 font-display text-lg">{detail.students ?? 0}</p></div>
-              <div className="rounded-xl bg-paper p-3"><p className="text-xs text-ink/50">Monthly</p><p className="mt-1 font-display text-lg text-forest-600">{formatNaira(detail.mrr ?? 0)}</p></div>
+              <div className="rounded-xl bg-paper p-3"><p className="text-xs text-ink/50">Price</p><p className="mt-1 font-display text-lg text-forest-600">{formatNaira(detail.mrr ?? 0)}</p></div>
             </div>
 
             {/* Reassign to a different catalog plan — plan name/price are
                managed once, under Platform > Subscriptions. */}
             <Select
               label="Subscription plan"
-              options={activePlans.map((p) => ({ value: String(p.id), label: `${p.name} — ${formatNaira(p.mrr)}/mo` }))}
+              options={activePlans.map((p) => ({ value: String(p.id), label: `${p.name} — ${formatNaira(p.mrr)}${{monthly:"/mo",quarterly:"/qtr",biannual:"/6mo",annual:"/yr"}[p.billing_cycle] || "/mo"}` }))}
               value={planId}
               onChange={(e) => setPlanId(e.target.value)}
               placeholder="Select a plan"
             />
+            <div className="flex items-end gap-2">
+              <Input
+                label={`Duration (number of ${cycle.unit}s)`}
+                type="number" min="1" value={duration} onChange={(e) => setDuration(e.target.value)}
+                placeholder="1" containerClassName="max-w-[220px]"
+              />
+              {selectedPlan && Number(duration) > 0 && (
+                <p className="pb-2.5 text-xs text-ink/45">
+                  Renews in {cycle.months * Number(duration)} months from today
+                </p>
+              )}
+            </div>
 
             <div className="border-t border-line pt-3 text-sm">
               {detail.owner && <div className="flex justify-between py-1"><span className="text-ink/55">Owner</span><span>{detail.owner}</span></div>}
